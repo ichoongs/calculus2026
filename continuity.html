@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>연속함수의 성질 — 보조 화면</title>
+<style>
+  :root{
+    --bg:#0f1421; --bg2:#171f31; --fg:#eef2f9; --dim:#94a0b8; --line:#2f3a51;
+    --accent:#ffc857; --accent2:#5ec8f2; --ok:#7ee081; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);
+    font-family:"Pretendard","맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+    overflow:hidden;-webkit-font-smoothing:antialiased}
+  #deck{position:fixed;inset:0}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;
+    align-items:center;padding:4.5vh 3.6vw 7vh;opacity:0;transition:opacity .25s ease;overflow:hidden}
+  .slide.on{display:flex;opacity:1}
+  .inner{width:100%;max-width:1960px}
+
+  .kicker{font-size:clamp(15px,1.6vw,25px);letter-spacing:.2em;color:var(--dim);font-weight:800}
+  h2{font-size:clamp(30px,3.9vw,60px);line-height:1.15;letter-spacing:-.022em;font-weight:800;
+     margin:.16em 0 .6em}
+  b,strong{color:var(--accent);font-weight:800}
+  em{font-style:normal;color:var(--accent2);font-weight:800}
+  .ok{color:var(--ok)} .bad{color:var(--danger)}
+
+  /* ═══ 슬라이드 1 : 조립 ═══════════════════════ */
+  .lay{display:grid;grid-template-columns:minmax(0,.62fr) minmax(0,1.38fr);
+       gap:clamp(20px,2.6vw,48px);align-items:start}
+  @media (max-aspect-ratio:1/1){.lay{grid-template-columns:1fr}}
+
+  /* 왼쪽 : 성질 패널 (항상 보임) */
+  .rules{background:#0b1020;border:1px solid var(--line);border-radius:20px;
+         padding:clamp(14px,1.9vh,26px) clamp(14px,1.4vw,24px)}
+  .rules h3{font-size:clamp(15px,1.55vw,24px);letter-spacing:.14em;color:var(--dim);
+            font-weight:800;margin-bottom:.55em}
+  .rules .cond{font-size:clamp(18px,1.9vw,30px);font-weight:800;color:var(--accent2);
+               margin-bottom:.55em}
+  .ri{display:flex;align-items:baseline;gap:.5em;border-radius:12px;
+      padding:clamp(6px,.85vh,12px) clamp(8px,.7vw,14px);
+      transition:background .3s ease,box-shadow .3s ease,transform .3s ease;opacity:.42}
+  .ri .n{font-size:clamp(19px,2vw,32px);font-weight:800;color:var(--accent2)}
+  .ri .t{font-size:clamp(19px,2vw,32px);font-weight:800}
+  .ri .s{font-size:clamp(14px,1.35vw,21px);font-weight:700;color:var(--dim)}
+  .ri.live{opacity:1;background:rgba(255,200,87,.12);
+           box-shadow:0 0 0 1.5px var(--accent) inset;transform:translateX(4px)}
+  .ri.live .n,.ri.live .t{color:var(--accent)}
+  .ri.used{opacity:.82}
+
+  /* 오른쪽 : 조립 라인 */
+  .asmwrap{display:flex;flex-direction:column;gap:clamp(7px,1vh,14px)}
+  .asm{display:flex;align-items:center;flex-wrap:wrap;gap:clamp(6px,.62vw,12px);
+       background:transparent;border:1.5px dashed #222c40;border-radius:14px;
+       padding:clamp(9px,1.25vh,17px) clamp(11px,1.15vw,20px);
+       transition:background .34s ease,border-color .34s ease}
+  .asm.shown{background:var(--bg2);border-style:solid;border-color:var(--line)}
+  .asm>*{opacity:0;transform:translateX(-12px);
+         transition:opacity .3s ease,transform .34s cubic-bezier(.2,.9,.3,1)}
+  .asm.shown>*{opacity:1;transform:none}
+  .asm.shown>*:nth-child(1){transition-delay:.02s}
+  .asm.shown>*:nth-child(2){transition-delay:.08s}
+  .asm.shown>*:nth-child(3){transition-delay:.14s}
+  .asm.shown>*:nth-child(4){transition-delay:.30s}
+  .asm.shown>*:nth-child(5){transition-delay:.52s}
+  .asm.shown>*:nth-child(6){transition-delay:.60s}
+
+  .mat{position:relative;font-size:clamp(19px,2.1vw,34px);font-weight:800;
+       padding:.2em .62em .2em .62em;border-radius:11px;
+       background:rgba(94,200,242,.12);color:var(--accent2);border:1px solid rgba(94,200,242,.3)}
+  .mat i{font-style:normal;color:var(--ok);font-size:.62em;margin-left:.35em;vertical-align:.18em}
+  .op{font-size:clamp(19px,2.1vw,34px);font-weight:800;color:var(--dim);padding:0 .1em}
+  .gate{display:inline-flex;align-items:center;gap:.42em;padding:0 .2em;
+        font-size:clamp(19px,2.1vw,34px);font-weight:800;color:var(--accent)}
+  .gate::before{content:"";width:clamp(18px,2vw,40px);height:2px;background:var(--accent);opacity:.55}
+  .gate::after{content:"▶";font-size:.62em;color:var(--accent);opacity:.9}
+  .res{font-size:clamp(20px,2.25vw,37px);font-weight:800;padding:.2em .7em;border-radius:11px;
+       background:rgba(126,224,129,.14);color:var(--ok);border:1px solid rgba(126,224,129,.34)}
+  .res.gold{background:rgba(255,200,87,.14);color:var(--accent);border-color:rgba(255,200,87,.34)}
+  .note{font-size:clamp(14px,1.45vw,23px);font-weight:700;color:var(--dim);margin-left:.3em}
+  .asm.seed{border-style:solid}
+  .asm.shown.seed{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+
+  .meters{display:flex;justify-content:space-between;gap:clamp(10px,1.4vw,26px);
+          margin-top:clamp(10px,1.6vh,20px);border-top:1px solid var(--line);
+          padding-top:clamp(10px,1.5vh,18px)}
+  .meter{text-align:center;flex:1}
+  .meter .lab{font-size:clamp(12px,1.2vw,19px);color:var(--dim);font-weight:800;line-height:1.35;
+              white-space:nowrap}
+  .meter .val{font-size:clamp(30px,3.7vw,62px);font-weight:800;line-height:1.05;
+              font-variant-numeric:tabular-nums;color:#7d879e}
+  .meter.grow .val{color:var(--accent)}
+  .meter .val.pop{animation:pop .45s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes pop{0%{transform:scale(.55);opacity:.2}100%{transform:none;opacity:1}}
+  .meter .cap{font-size:clamp(12px,1.22vw,19px);color:var(--dim);font-weight:700;min-height:1.5em;
+              white-space:nowrap}
+
+  /* ═══ 문제 슬라이드 공통 ═══════════════════════ */
+  .prob{background:#0b1020;border:1px solid var(--line);border-left:5px solid var(--accent);
+        border-radius:16px;padding:clamp(14px,2vh,26px) clamp(16px,1.6vw,30px);
+        font-size:clamp(20px,2.25vw,37px);font-weight:800;line-height:1.5}
+  .prob .q{color:var(--dim);font-size:.78em;font-weight:700;display:block;margin-top:.3em}
+  .steps{display:flex;flex-direction:column;gap:clamp(8px,1.15vh,16px);
+         margin-top:clamp(14px,2vh,26px)}
+  .step{display:grid;grid-template-columns:clamp(52px,4.6vw,80px) 1fr;gap:clamp(10px,1.1vw,20px);
+        align-items:baseline;font-size:clamp(20px,2.15vw,35px);font-weight:800;line-height:1.35;
+        opacity:0;transform:translateY(12px);transition:opacity .36s ease,transform .36s ease}
+  .step.shown{opacity:1;transform:none}
+  .step .tag{font-size:clamp(15px,1.5vw,24px);font-weight:800;color:var(--accent2);
+             letter-spacing:.06em;text-align:right}
+  .step .sub{display:block;font-size:.66em;font-weight:700;color:var(--dim);margin-top:.22em}
+
+  /* ═══ 조합 표 ═══════════════════════════════ */
+  table.combo{width:100%;border-collapse:separate;border-spacing:clamp(7px,.8vw,14px)}
+  table.combo th,table.combo td{padding:clamp(10px,1.5vh,20px) clamp(8px,1vw,18px);
+        border-radius:14px;text-align:center;font-size:clamp(19px,2.15vw,35px);font-weight:800}
+  table.combo th{color:var(--dim);font-size:clamp(16px,1.75vw,28px);letter-spacing:.05em}
+  table.combo th.rowh{text-align:right;white-space:nowrap}
+  table.combo td{background:#101728;border:1.5px dashed #222c40;color:transparent}
+  table.combo td{color:transparent}
+  table.combo td.shown{border-style:solid;border-color:var(--line);background:var(--bg2)}
+  table.combo td.shown.given{background:rgba(126,224,129,.13);border-color:rgba(126,224,129,.35);color:var(--ok)}
+  table.combo td.shown.fixed{background:rgba(255,107,107,.13);border-color:rgba(255,107,107,.35);color:var(--danger)}
+  table.combo td.shown.open{background:rgba(148,160,184,.1);border-color:var(--line);color:var(--dim)}
+  .foot{margin-top:clamp(12px,1.8vh,22px);display:flex;flex-direction:column;gap:.45em}
+  .fn{font-size:clamp(15px,1.6vw,26px);font-weight:700;color:var(--dim);line-height:1.45;
+      opacity:0;transform:translateY(8px);transition:opacity .34s ease,transform .34s ease}
+  .fn.shown{opacity:1;transform:none}
+
+  .punch{margin-top:clamp(14px,2vh,30px);text-align:center;
+         font-size:clamp(21px,2.5vw,40px);font-weight:800;line-height:1.4;min-height:1.6em;
+         opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+  .punch.shown{opacity:1;transform:none}
+
+  #hud{position:fixed;left:0;right:0;bottom:0;height:42px;display:flex;align-items:center;
+    justify-content:space-between;padding:0 20px;font-size:16px;color:var(--dim);
+    background:linear-gradient(to top,rgba(15,20,33,.96),transparent);pointer-events:none;font-weight:700}
+  #bar{position:fixed;left:0;top:0;height:4px;background:var(--accent);width:0;transition:width .25s ease;z-index:5}
+  #notes{position:fixed;right:0;top:0;bottom:0;width:min(460px,40vw);background:#080c15;
+    border-left:1px solid var(--line);padding:26px 24px;overflow-y:auto;
+    transform:translateX(100%);transition:transform .22s ease;z-index:10}
+  #notes.on{transform:none}
+  #notes h4{color:var(--accent);font-size:14px;letter-spacing:.18em;margin-bottom:14px;font-weight:800}
+  #notes .body{font-size:16.5px;line-height:1.75;color:#c8d0e0;white-space:pre-wrap}
+  #notes .body b{color:var(--accent)} #notes .body i{font-style:normal;color:var(--accent2)}
+  #help{position:fixed;inset:0;background:rgba(8,12,21,.95);z-index:20;display:none;align-items:center;justify-content:center}
+  #help.on{display:flex}
+  #help div{font-size:20px;line-height:2.2;color:#c8d0e0;font-weight:600}
+  #help kbd{display:inline-block;min-width:2.4em;text-align:center;background:var(--bg2);
+    border:1px solid var(--line);border-radius:7px;padding:.12em .55em;margin-right:.8em;
+    color:var(--fg);font-weight:800;font-family:inherit}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="deck">
+
+<!-- ════ 1. 조립 ════════════════════════════════════════ -->
+<section class="slide" data-act="학습지 2) — 왼쪽 성질을 짚어가며 한 줄씩"
+ data-note="<b>왼쪽 패널을 손으로 짚으면서</b> 한 줄씩 넘기세요. 지금 쓰는 규칙에 불이 들어옵니다.
+
+한 줄 넘길 때마다 물을 것
+· 씨앗 : &quot;세 조건으로 직접 확인한 건 이 둘뿐&quot;
+· x·x  : &quot;<i>둘 다 이미 연속인 게 확인된 것</i>이죠? 그러니 ❸을 쓸 수 있어요&quot;
+· x²·x : &quot;방금 만든 x²을 재료로 또 씁니다&quot; → xⁿ 까지 유한 번
+· ❶❷  : 상수배해서 더하면 다항함수 <b>전부</b>
+· ❹    : 단서 (분모)≠0 이 붙는다 → 다음 슬라이드로
+
+마지막에 : &quot;방금 몇 개의 점을 확인했죠?&quot; → <b>0개</b>">
+  <div class="inner">
+    <div class="kicker">학습지 2)</div>
+    <h2>연속이 보장되는 함수</h2>
+    <div class="lay">
+
+      <div class="rules">
+        <h3>연속함수의 성질</h3>
+        <div class="cond">f, g 가 각각 x=a 에서 연속이면</div>
+        <div class="ri" id="R1"><span class="n">❶</span><span class="t">cf</span></div>
+        <div class="ri" id="R2"><span class="n">❷</span><span class="t">f+g , f−g</span></div>
+        <div class="ri" id="R3"><span class="n">❸</span><span class="t">fg</span></div>
+        <div class="ri" id="R4"><span class="n">❹</span><span class="t">f/g</span>
+          <span class="s">단, g(a)≠0</span></div>
+        <div class="meters">
+          <div class="meter"><div class="lab">손으로 확인</div><div class="val">2</div>
+            <div class="cap">안 변함</div></div>
+          <div class="meter"><div class="lab">확인한 점</div><div class="val">0</div>
+            <div class="cap">안 변함</div></div>
+          <div class="meter grow"><div class="lab">보장된 함수</div>
+            <div class="val" id="grow">2</div><div class="cap" id="growcap">개</div></div>
+        </div>
+      </div>
+
+      <div class="asmwrap">
+        <div class="asm seed rv shown" data-r="0">
+          <span class="mat">y = x <i>✓</i></span>
+          <span class="op"></span>
+          <span class="mat">y = c <i>✓</i></span>
+          <span class="note">세 조건 (ⅰ)(ⅱ)(ⅲ) 으로 직접 확인 &nbsp;— 손으로 한 건 여기까지</span>
+        </div>
+        <div class="asm rv" data-r="1" data-rule="R3">
+          <span class="mat">x <i>✓</i></span><span class="op">·</span><span class="mat">x <i>✓</i></span>
+          <span class="gate">❸</span><span class="res">x²</span>
+        </div>
+        <div class="asm rv" data-r="2" data-rule="R3">
+          <span class="mat">x² <i>✓</i></span><span class="op">·</span><span class="mat">x <i>✓</i></span>
+          <span class="gate">❸</span><span class="res">x³</span>
+          <span class="note">계속 하면 … xⁿ 까지</span>
+        </div>
+        <div class="asm rv" data-r="3" data-rule="R1">
+          <span class="mat">3 <i>✓</i></span><span class="op">·</span><span class="mat">x² <i>✓</i></span>
+          <span class="gate">❶</span><span class="res">3x²</span>
+        </div>
+        <div class="asm rv" data-r="4" data-rule="R2">
+          <span class="mat">3x² <i>✓</i></span><span class="op">+</span><span class="mat">x <i>✓</i></span>
+          <span class="gate">❷</span><span class="res gold">다항함수 전부</span>
+          <span class="note">모든 실수에서 연속</span>
+        </div>
+        <div class="asm rv" data-r="5" data-rule="R4">
+          <span class="mat">x−1 <i>✓</i></span><span class="op">/</span><span class="mat">x²+1 <i>✓</i></span>
+          <span class="gate">❹</span><span class="res gold">유리함수</span>
+          <span class="note">단, (분모) ≠ 0 인 곳에서만</span>
+        </div>
+      </div>
+    </div>
+    <div class="punch rv" data-r="6">
+      재료는 <em>전부 이미 ✓ 받은 것</em>들뿐 &nbsp;·&nbsp;
+      <b>한 점도 따로 확인하지 않았다</b>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 2. 37쪽 4번 ════════════════════════════════════ -->
+<section class="slide" data-act="교과서 37쪽 4번 — 어디만 조사하면 되나"
+ data-note="&quot;조사할 곳은 어디인가&quot;를 <b>말로 정의하지 말고 이 문제로 겪게</b> 합니다.
+
+단계1~2 에서 학생이 &quot;둘 다 다항함수니까 연속&quot; 까지 오면
+<i>&quot;그럼 이 함수, 어디를 조사해야 하죠?&quot;</i> 라고 되물으세요.
+답이 &quot;분모가 0인 곳&quot; 하나로 좁혀지는 게 이 슬라이드의 목적입니다.
+
+단계4 는 <b>후보를 아예 없애는</b> 문제. 42쪽 16번과 같은 구조라는 걸 4번 슬라이드에서 회수합니다.">
+  <div class="inner">
+    <div class="kicker">교과서 37쪽 4번</div>
+    <h2>이런 상황에서는 어디만 조사하면 되지?</h2>
+    <div class="prob">
+      f(x) = x² − 1 ,&nbsp;&nbsp; g(x) = x² − ax + 3
+      <span class="q">f(x)/g(x) 가 모든 실수 x 에서 연속이 되도록 하는 정수 a 의 개수는?</span>
+    </div>
+    <div class="steps">
+      <div class="step rv" data-r="0"><span class="tag">1</span>
+        <span>분자도 분모도 <em>다항함수</em> → 각각 모든 실수에서 연속 <span class="ok">✓</span>
+        <span class="sub">여기까지는 조사할 게 없다. 성질이 다 해준다</span></span></div>
+      <div class="step rv" data-r="1"><span class="tag">2</span>
+        <span>❹ 가 덮어주는 범위 = <em>g(x) ≠ 0 인 모든 x</em>
+        <span class="sub">이 점들은 따질 필요조차 없다</span></span></div>
+      <div class="step rv" data-r="2"><span class="tag">3</span>
+        <span>남는 곳은 <b>g(x) = 0 인 x</b> &nbsp;… 그게 전부
+        <span class="sub">후보는 딱 여기뿐</span></span></div>
+      <div class="step rv" data-r="3"><span class="tag">4</span>
+        <span>모든 실수에서 연속 ⇔ 그런 x 가 <b>아예 없다</b>
+        <span class="sub">x² − ax + 3 = 0 이 실근을 갖지 않아야</span></span></div>
+      <div class="step rv" data-r="4"><span class="tag">답</span>
+        <span>D = a² − 12 &lt; 0 → −2√3 &lt; a &lt; 2√3 → 정수 <b>7</b>개
+        <span class="sub">a = −3, −2, −1, 0, 1, 2, 3</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 3. 41쪽 10번 ═══════════════════════════════════ -->
+<section class="slide" data-act="교과서 41쪽 10번 — 성질이 채워주는 칸은 어디까지"
+ data-note="표의 <b>맨 윗줄만</b> 성질이 채워줍니다. 아래 두 줄은 성질이 침묵하는 칸.
+
+가장 걸리는 지점은 <i>연속 + 불연속 = 반드시 불연속</i> 입니다.
+&quot;성질을 거꾸로 쓰면&quot; 나옵니다 —
+f+g 가 연속이라고 치면 g = (f+g) − f 도 ❷에 의해 연속이어야 하는데,
+g 는 불연속이었으니 모순.
+
+곱은 다릅니다. f = 0 이면 fg = 0 이라 연속.
+41쪽 10번 ㄹ 이 <b>불연속+불연속 → 불연속</b> 의 실물 사례입니다.">
+  <div class="inner">
+    <div class="kicker">교과서 41쪽 10번</div>
+    <h2>연속 + 불연속 이라면? &nbsp;불연속 × 불연속 이라면?</h2>
+    <table class="combo">
+      <tr><th></th><th>f + g</th><th>f · g</th></tr>
+      <tr><th class="rowh">연속 &nbsp;+&nbsp; 연속</th>
+        <td class="given cell" data-r="0">연속</td><td class="given cell" data-r="0">연속</td></tr>
+      <tr><th class="rowh">연속 &nbsp;+&nbsp; 불연속</th>
+        <td class="fixed cell" data-r="1">반드시 불연속</td><td class="open cell" data-r="1">정해지지 않음</td></tr>
+      <tr><th class="rowh">불연속 + 불연속</th>
+        <td class="open cell" data-r="2">정해지지 않음</td><td class="open cell" data-r="2">정해지지 않음</td></tr>
+    </table>
+    <div class="foot">
+      <div class="fn rv" data-r="1">↑ f+g 가 연속이라 치면 g = (f+g) − f 도 <b>❷</b> 에 의해 연속 → 모순
+        &nbsp;/&nbsp; 곱은 f = 0 이면 fg = 0 이라 연속</div>
+      <div class="fn rv" data-r="2">↑ 10번 ㄹ 은 <b>불연속 + 불연속 → 불연속</b>
+        &nbsp;/&nbsp; f 와 −f 를 더하면 0, 부호함수를 제곱하면 1 → 둘 다 연속</div>
+    </div>
+    <div class="punch rv" data-r="3">
+      성질이 채워준 칸은 <em>맨 윗줄뿐</em>. &nbsp; 나머지는 <b>직접 조사</b>.
+    </div>
+  </div>
+</section>
+
+<!-- ════ 4. 32쪽 생각 키우기 → 42쪽 16번 ════════════════ -->
+<section class="slide" data-act="교과서 32쪽 생각 키우기 → 42쪽 16번"
+ data-note="세 학생의 대화에서 <b>마지막 학생의 말이 틀렸다</b>는 걸 반례 하나로 뒤집습니다.
+
+&quot;분모가 0이 되는 x 가 있다&quot; 는 유리함수의 성질이 아니라
+<i>분모가 실근을 가질 때만</i> 생기는 일.
+
+42쪽 16번은 <b>조사할 후보를 아예 0개로 만드는</b> 문제이고,
+37쪽 4번과 완전히 같은 구조입니다. 마지막에 그 둘을 묶어주세요.">
+  <div class="inner">
+    <div class="kicker">교과서 32쪽 생각 키우기</div>
+    <h2>유리함수는 모두 분모가 0인 점이 있을까?</h2>
+    <div class="steps">
+      <div class="step rv" data-r="0"><span class="tag">대화</span>
+        <span>“유리함수는 분모를 0으로 하는 x 에서 불연속이지?” “응, 그렇지.”
+        <span class="sub">“그럼 모든 실수에서 연속인 유리함수는 없는 거야?”</span></span></div>
+      <div class="step rv" data-r="1"><span class="tag">반례</span>
+        <span>y = <b>1 / (x² + 1)</b>
+        <span class="sub">분모가 0이 되는 실수 x 가 아예 없다 → 조사할 후보 0개</span></span></div>
+      <div class="step rv" data-r="2"><span class="tag">언제</span>
+        <span>분모가 <em>실근을 갖지 않을 때</em> → 판별식 D &lt; 0
+        <span class="sub">유리함수라서 불연속인 게 아니라, 분모가 0이 될 때만 불연속</span></span></div>
+      <div class="step rv" data-r="3"><span class="tag">42쪽<br>16번</span>
+        <span>f(x) = (x−1) / (x² + ax + 2) 가 모든 실수에서 연속
+        <span class="sub">D = a² − 8 &lt; 0 → <b>−2√2 &lt; a &lt; 2√2</b></span></span></div>
+    </div>
+    <div class="punch rv" data-r="4">
+      아까 <em>37쪽 4번</em>도 같은 이야기였다 &nbsp;·&nbsp;
+      <b>성질이 안 봐주는 곳만</b> 조사한다
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div id="hud"><div id="act"></div><div id="num"></div></div>
+<aside id="notes"><h4>발표자 노트</h4><div class="body"></div></aside>
+<div id="help"><div>
+  <kbd>→</kbd> / <kbd>Space</kbd> 다음 단계<br>
+  <kbd>←</kbd> 이전 단계<br>
+  <kbd>↓</kbd> / <kbd>↑</kbd> 슬라이드 통째로 이동<br>
+  <kbd>N</kbd> 발표자 노트 &nbsp; <kbd>Home</kbd> 처음으로<br>
+  <kbd>F11</kbd> 전체 화면 &nbsp; <kbd>?</kbd> 닫기
+</div></div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  // 표 셀도 단계 요소로 취급
+  slides.forEach(s=>s.querySelectorAll('td.cell').forEach(td=>td.classList.add('rv')));
+  const plan=slides.map(s=>{
+    const items=[...s.querySelectorAll('.rv')].map(el=>({el,r:+el.dataset.r}));
+    return {items,max:items.reduce((m,x)=>Math.max(m,x.r),0)};
+  });
+  let si=0,st=0;
+
+  const GROW=[['2','개'],['3','개'],['∞','xⁿ'],['∞','상수배'],
+              ['∞','다항함수'],['∞','유리함수'],['∞','유리함수']];
+  let last='';
+  function meters(){
+    if(si!==0) return;
+    const g=document.getElementById('grow'),c=document.getElementById('growcap');
+    const [v,cap]=GROW[Math.min(st,GROW.length-1)];
+    if(v!==last){ g.classList.remove('pop'); void g.offsetWidth; g.classList.add('pop'); last=v; }
+    g.textContent=v; c.textContent=cap;
+  }
+  function lamps(){
+    if(si!==0) return;
+    ['R1','R2','R3','R4'].forEach(id=>{
+      const e=document.getElementById(id); e.classList.remove('live','used');
+    });
+    const rows=[...document.querySelectorAll('#deck .asm[data-rule]')];
+    let live=null;
+    rows.forEach(r=>{
+      if(+r.dataset.r<=st){
+        const e=document.getElementById(r.dataset.rule);
+        e.classList.add('used');
+        live=e;                       // 마지막으로 쓴 규칙을 계속 켜 둔다
+      }
+    });
+    if(live){ live.classList.remove('used'); live.classList.add('live'); }
+  }
+
+  function fit(){
+    const s=slides[si],inner=s.firstElementChild;
+    if(!inner) return;
+    inner.style.transform='none';
+    const cs=getComputedStyle(s);
+    const availH=s.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+    const availW=s.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+    if(availH<=0||availW<=0) return;
+    const r=inner.getBoundingClientRect();
+    if(r.height<=0||r.width<=0) return;
+    const k=Math.min(1,availH/r.height,availW/r.width);
+    if(k>0.05&&k<0.999) inner.style.transform='scale('+k.toFixed(3)+')';
+  }
+  function render(){
+    slides.forEach((s,i)=>s.classList.toggle('on',i===si));
+    plan[si].items.forEach(({el,r})=>el.classList.toggle('shown',r<=st));
+    document.getElementById('act').innerHTML=slides[si].dataset.act||'';
+    document.getElementById('num').textContent=(si+1)+' / '+slides.length;
+    document.getElementById('bar').style.width=((si+1)/slides.length*100)+'%';
+    document.querySelector('#notes .body').innerHTML=
+      slides[si].dataset.note||'<span style="color:#5b6479">노트 없음</span>';
+    meters(); lamps(); fit();
+  }
+  function go(d){
+    if(d>0){ if(st<plan[si].max) st++; else if(si<slides.length-1){si++;st=0;} }
+    else   { if(st>0) st--; else if(si>0){si--;st=plan[si].max;} }
+    render();
+  }
+  function jump(d){const n=si+d;if(n<0||n>=slides.length)return;si=n;st=0;render();}
+
+  addEventListener('keydown',e=>{
+    const k=e.key;
+    if(k==='ArrowRight'||k===' '||k==='PageDown'){e.preventDefault();go(1);}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();go(-1);}
+    else if(k==='ArrowDown'){e.preventDefault();jump(1);}
+    else if(k==='ArrowUp'){e.preventDefault();jump(-1);}
+    else if(k==='Home'){si=0;st=0;render();}
+    else if(k==='End'){si=slides.length-1;st=plan[si].max;render();}
+    else if(k==='n'||k==='N'||k==='ㅜ'){document.getElementById('notes').classList.toggle('on');}
+    else if(k==='?'||k==='/'){document.getElementById('help').classList.toggle('on');}
+    else if(k==='Escape'){document.getElementById('help').classList.remove('on');}
+  });
+  addEventListener('click',e=>{
+    if(e.target.closest('#notes'))return;
+    const h=document.getElementById('help');
+    if(h.classList.contains('on')){h.classList.remove('on');return;}
+    go(e.clientX<innerWidth*0.25?-1:1);
+  });
+  addEventListener('resize',fit);
+  render();
+})();
+</script>
+</body>
+</html>
