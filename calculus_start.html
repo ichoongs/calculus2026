@@ -1177,5 +1177,21 @@
   render();
 })();
 </script>
+<!-- 휴대폰·태블릿용 넘기기 버튼 (2026-10-14 추가) -->
+<style>
+html,body{cursor:pointer}
+#mnav{display:none;position:fixed;right:12px;bottom:calc(56px + env(safe-area-inset-bottom));z-index:99999;gap:8px}
+#mnav button{width:46px;height:46px;opacity:.85;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:rgba(255,255,255,.92);color:#222;font-size:22px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.18);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+@media (hover:none),(pointer:coarse){#mnav{display:flex}}
+</style>
+<div id="mnav" aria-label="슬라이드 넘기기"><button type="button" data-k="ArrowLeft" aria-label="이전">◀</button><button type="button" data-k="ArrowRight" aria-label="다음">▶</button></div>
+<script>
+document.querySelectorAll('#mnav button').forEach(function(b){
+  b.addEventListener('click',function(e){
+    e.stopPropagation();
+    window.dispatchEvent(new KeyboardEvent('keydown',{key:b.dataset.k,bubbles:true,cancelable:true}));
+  });
+});
+</script>
 </body>
 </html>
