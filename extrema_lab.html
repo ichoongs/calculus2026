@@ -1,0 +1,782 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>극대·극소 탐구실</title><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}</style></head><body>
+<title>극대·극소 탐구실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=STIX+Two+Text:ital,wght@1,500&display=swap">
+<style>
+/* 레이아웃: 위 f(x), 아래 f′(x) — 같은 x축을 세로로 맞춰 쌓고, 그 아래 미션 카드. 폰 한 손 조작 기준 */
+:root{
+  --bg:#f4f5f8; --panel:#ffffff; --ink:#1c2230; --muted:#5b6476; --line:#dfe3ea; --axis:#8b93a4;
+  --up:#d6451b; --down:#1e62c4; --flat:#23863b; --curve2:#6b4cc0; --soft:#eef0f5;
+  --ok:#23863b; --warn:#b35c00;
+  --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-math:"STIX Two Text", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11141a; --panel:#191e27; --ink:#e6e9f0; --muted:#9aa3b4; --line:#272d38; --axis:#5f687a;
+  --up:#ff7d4d; --down:#5ea4ff; --flat:#55c56e; --curve2:#a690ff; --soft:#20262f; --ok:#55c56e; --warn:#ffb15c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11141a; --panel:#191e27; --ink:#e6e9f0; --muted:#9aa3b4; --line:#272d38; --axis:#5f687a;
+  --up:#ff7d4d; --down:#5ea4ff; --flat:#55c56e; --curve2:#a690ff; --soft:#20262f; --ok:#55c56e; --warn:#ffb15c; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:10px 32px;display:flex;flex-direction:column;gap:10px}
+.main{display:flex;flex-direction:column;gap:10px}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (min-width:820px){
+  .main{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}
+  .main>section{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px)}
+}
+@media (max-width:819px){ .sub{display:none} .legend{display:none} .tab small{font-size:.7rem} .tab{padding:6px 4px} .mission>p{font-size:.88rem} }
+header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-size:1.25rem;margin:0;font-weight:700;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.85rem}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+:root{--lens:var(--curve2)}
+/* ── 0단계 돋보기 ── */
+#s0{display:flex;flex-direction:column;gap:10px}
+#s0 .lmain{display:flex;flex-direction:column;gap:10px}
+#s0 .lside{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (min-width:820px){#s0 .lmain{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}#s0 .lmain>section{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px)}}
+#s0 .panel{gap:8px}
+#s0 .plots{gap:10px}
+#s0 .chip{white-space:nowrap}
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
+.lab b{color:var(--ink)}
+.slider{display:flex;flex-direction:column;gap:4px}
+.slider label{font-size:.9rem;display:flex;justify-content:space-between;gap:8px}
+.slider input{width:100%;accent-color:var(--lens);height:28px}
+.checks{display:grid;grid-template-columns:1fr;gap:6px}
+.check{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:.92rem}
+.mark{font-weight:700;min-width:2.2em;text-align:center;border-radius:999px;padding:1px 8px;border:1px solid currentColor}
+.mark.yes{color:var(--ok)} .mark.no{color:var(--muted)}
+.zchecks{display:none;gap:5px;white-space:nowrap;align-items:center;flex-wrap:wrap;font-size:.85rem}
+.zc-lab{color:var(--muted);font-size:.8rem}
+.zc{padding:1px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
+.zc.yes{border-color:var(--ok);color:var(--ok)}
+.lmission{border-left:4px solid var(--lens);padding:8px 10px;background:var(--soft);border-radius:0 10px 10px 0;display:flex;flex-direction:column;gap:8px}
+.lmission h2{font-size:1rem;margin:0} .lmission p{margin:0;font-size:.92rem}
+.qhead{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.qhead .btn{flex:none}
+.score{font-variant-numeric:tabular-nums;font-size:.8rem;color:var(--muted)}
+.tab{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 6px;font:inherit;font-weight:600;font-size:.9rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
+.tab small{font-weight:400;color:var(--muted);font-size:.75rem}
+.tab[aria-selected="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tab:focus-visible,.btn:focus-visible,.chip:focus-visible,input:focus-visible{outline:2px solid var(--curve2);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.plotlab{display:flex;justify-content:space-between;align-items:baseline;font-size:.85rem;color:var(--muted);gap:8px;flex-wrap:wrap}
+.plots{position:relative;display:flex;flex-direction:column;gap:6px}
+.overlay{position:absolute;left:0;top:0;pointer-events:none;background:transparent!important;border-radius:0}
+.plotlab b{color:var(--ink);font-weight:600}
+.m{font-family:var(--f-math);font-style:italic;font-size:1.05em}
+canvas{width:100%;display:block;touch-action:none;border-radius:8px;background:var(--panel)}
+.readout{font-variant-numeric:tabular-nums;display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.9rem}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-weight:600;font-size:.85rem;border:1px solid currentColor}
+.pill.up{color:var(--up)} .pill.down{color:var(--down)} .pill.flat{color:var(--flat)} .pill.none{color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{appearance:none;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:.85rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.mission{border-left:4px solid var(--curve2);padding:8px 10px;background:var(--soft);border-radius:0 10px 10px 0;display:flex;flex-direction:column;gap:8px}
+.mission h2{font-size:1rem;margin:0}
+.mission p{margin:0}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;min-height:42px}
+.btn.primary{background:var(--ink);color:var(--panel)}
+.btn.ghost{border-color:var(--line);font-weight:400}
+.fb{font-weight:600;min-height:1.4em}
+.fb.ok{color:var(--ok)} .fb.no{color:var(--warn)}
+.extlist{display:flex;gap:6px;flex-wrap:wrap}
+.banner{border:1px dashed var(--warn);color:var(--ink);background:var(--soft);border-radius:10px;padding:8px 10px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.coef{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.coef label{display:flex;flex-direction:column;gap:2px;font-size:.85rem;color:var(--muted)}
+.coef input{box-sizing:border-box;min-width:0;font:inherit;font-size:1.05rem;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);width:100%;font-variant-numeric:tabular-nums}
+.formula{font-family:var(--f-math);font-style:italic;font-size:1.1rem;overflow-x:auto}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.prog{font-size:.8rem;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* 폰: 함수 버튼은 그래프 위 한 줄(옆으로 넘기기), 미션은 화면 아래 고정 바. 그래프를 만지면 바가 접힘(제목 눌러 펼치기) */
+@media (max-width:819px){
+  .wrap{padding-bottom:calc(var(--barH,0px) + 16px)}
+  h1{font-size:1.1rem}
+  .main{gap:8px}
+  .side,.side>section{display:contents}
+  .side .chips,.side .formula,.side .coef{order:-1}
+  .side .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  .side .chips::-webkit-scrollbar{display:none}
+  .chip{white-space:nowrap;flex:none}
+  .side .prog,.coef .hint{display:none}
+  .side .coef{width:100%;min-width:0}
+  .side .coef label{min-width:0}
+  .side .readout{order:1}
+  .side .mission{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--panel);border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px rgba(0,0,0,.12);gap:6px;max-height:55vh;overflow:auto}
+  .side .mission h2{font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+  .side .mission h2::after{content:"접기 ▾";font-size:.75rem;font-weight:400;color:var(--muted);flex:none}
+  body.mini .side .mission h2::after{content:"설명 ▴"}
+  body.mini .side .mission>p{display:none}
+  .side .mission .btn{min-height:38px;padding:6px 10px;font-size:.88rem}
+  .side .mission .banner .btn{min-height:34px}
+  .fb{min-height:0;font-size:.88rem}
+  body.typing .side .mission{display:none}
+  /* 0단계 돋보기 (폰) */
+  #s0 .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+  #s0 .chips::-webkit-scrollbar{display:none}
+  #s0 .chip{flex:none}
+  #LSetPanel{display:none}
+  .zchecks{display:flex}
+  #LQuiz{position:fixed;left:0;right:0;bottom:0;z-index:5;border-radius:14px 14px 0 0;border-width:1px 0 0;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px rgba(0,0,0,.12)}
+  #LQuiz .lmission{border-left:0;padding:0;background:transparent;gap:6px}
+  #LQuiz h2,#LQuiz .long{display:none}
+  #LQuiz .lmission p{font-size:.95rem;font-weight:600}
+  #LQuiz .ans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  #LQuiz .ans .btn{padding:5px 2px;min-height:40px;font-size:.82rem;line-height:1.2}
+  #LQuiz .qhead .btn{min-height:34px;padding:4px 12px;font-size:.85rem}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>극대·극소 탐구실</h1>
+    <span class="sub">미적분Ⅰ · 03 함수의 극대와 극소 · 교과서 87~90쪽</span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="단계">
+    <button class="tab" role="tab" id="tab0" aria-selected="false" data-stage="0">0단계<small>돋보기</small></button>
+    <button class="tab" role="tab" id="tab1" aria-selected="true" data-stage="1">1단계<small>부호 보기</small></button>
+    <button class="tab" role="tab" id="tab2" aria-selected="false" data-stage="2">2단계<small><span class="m">f′</span> 움직이기</small></button>
+    <button class="tab" role="tab" id="tab3" aria-selected="false" data-stage="3">3단계<small>조건 맞추기</small></button>
+  </nav>
+
+  <div id="backBanner" class="banner" hidden>
+    <span id="backText">방금 만든 함수를 1단계에서 보고 있어요.</span>
+    <button class="btn" id="backBtn">원래 미션으로 돌아가기</button>
+  </div>
+
+  <!-- 0단계: 돋보기 (정의로 극대·극소 판정, 교과서 87쪽). id는 L로 시작 -->
+  <section id="s0" hidden>
+  <div class="chips" id="LPresets" aria-label="그래프 고르기"></div>
+
+  <div class="lmain">
+    <section class="panel">
+      <div class="lab"><span><b>전체 그래프</b> · 아래 막대의 손잡이를 끌어요</span><span id="LALab"></span></div>
+      <div class="plots" id="LPlots">
+        <canvas id="LCvMain" aria-label="전체 그래프와 돋보기 렌즈. 아래 막대의 가운데 손잡이를 끌면 a, 양 끝 괄호를 끌면 δ가 바뀜"></canvas>
+        <canvas id="LCvZoom" aria-label="돋보기로 확대한 구간"></canvas>
+        <canvas id="LCvO" class="overlay" aria-hidden="true"></canvas>
+      </div>
+      <div class="zchecks" id="LZChecks"><span class="zc-lab">구간 안 모든 <span class="m">x</span>:</span><span id="LZMax"></span><span id="LZMin"></span></div>
+      <div class="lab"><span><b>돋보기 안</b> · 열린구간 (<span class="m">a</span> − δ, <span class="m">a</span> + δ)</span><span id="LZLab"></span></div>
+    </section>
+
+    <div class="lside">
+      <section class="panel" id="LSetPanel">
+        <div class="slider">
+          <label for="LDelta"><span>돋보기 크기 δ (구간의 반쪽 길이)</span><b id="LDVal"></b></label>
+          <input type="range" id="LDelta" min="0.05" max="1.5" step="0.05" value="0.8">
+        </div>
+        <div class="checks">
+          <div class="check"><span>구간 안 모든 <span class="m">x</span>에서 <span class="m">f</span>(<span class="m">x</span>) ≤ <span class="m">f</span>(<span class="m">a</span>) ?</span><span class="mark" id="LCMax"></span></div>
+          <div class="check"><span>구간 안 모든 <span class="m">x</span>에서 <span class="m">f</span>(<span class="m">x</span>) ≥ <span class="m">f</span>(<span class="m">a</span>) ?</span><span class="mark" id="LCMin"></span></div>
+        </div>
+        <p class="prog">돋보기를 줄여서라도 위 조건이 한 번 맞으면 그걸로 충분해요. "<b>어떤</b> 열린구간"이니까요.</p>
+      </section>
+
+      <section class="panel" id="LQuiz">
+        <div class="lmission">
+          <h2 id="LQTitle">퀴즈</h2>
+          <div class="qhead"><p id="LQText"></p><button class="btn primary" id="LNext">다음 점</button></div>
+          <div class="row ans">
+            <button class="btn" data-ans="max">극대</button>
+            <button class="btn" data-ans="min">극소</button>
+            <button class="btn" data-ans="both">극대이면서 극소</button>
+            <button class="btn" data-ans="none">둘 다 아님</button>
+          </div>
+          <div class="fb" id="LFb" aria-live="polite"></div>
+          <span class="score" id="LScore"></span>
+        </div>
+      </section>
+    </div>
+  </div>
+  </section>
+
+  <!-- 공통 그래프 -->
+  <div class="main" id="mainArea">
+  <section class="panel"> <!-- graphs -->
+    <div class="plots" id="plots">
+    <div class="plotlab"><span><b>y = <span class="m">f</span>(<span class="m">x</span>)</b></span><span id="fLabel"></span></div>
+    <canvas id="cvF" height="230" aria-label="함수 f의 그래프"></canvas>
+    <div class="plotlab"><span><b>y = <span class="m">f′</span>(<span class="m">x</span>)</b></span><span id="dLabel"></span></div>
+    <canvas id="cvD" height="200" aria-label="도함수 f′의 그래프"></canvas>
+    <canvas id="cvO" class="overlay" aria-hidden="true"></canvas>
+    </div>
+    <div class="legend"><span><i style="background:var(--up)"></i>f′ + (증가)</span><span><i style="background:var(--down)"></i>f′ − (감소)</span><span><i style="background:var(--flat)"></i>f′ = 0</span></div>
+  </section>
+
+  <div class="side">
+  <!-- 1단계 -->
+  <section class="panel" id="s1">
+    <div class="chips" id="presets" aria-label="함수 고르기"></div>
+    <div class="readout" id="read1"></div>
+    <div class="mission">
+      <h2>미션: 극대와 극소를 모두 찾기</h2>
+      <p>그래프나 아래 띠의 보라 손잡이를 끌어 점을 옮기세요. 접선 색이 바뀌는 곳에서 버튼을 누르세요.</p>
+      <div class="row">
+        <button class="btn" id="b1max">여기가 극대</button>
+        <button class="btn" id="b1min">여기가 극소</button>
+        <button class="btn ghost" id="b1none">극값이 없다</button>
+      </div>
+      <div class="fb" id="fb1" aria-live="polite"></div>
+      <div class="extlist" id="found1"></div>
+    </div>
+  </section>
+
+  <!-- 2단계 -->
+  <section class="panel" id="s2" hidden>
+    <div class="chips" id="deg2">
+      <button class="chip" data-deg="3" aria-pressed="true">삼차함수 (<span class="m">f′</span>은 이차)</button>
+      <button class="chip" data-deg="4" aria-pressed="false">사차함수 (<span class="m">f′</span>은 삼차)</button>
+      <button class="chip" id="flip">위아래 뒤집기</button>
+    </div>
+    <p class="prog">아래 부호 띠의 보라 손잡이(근)를 좌우로 천천히 끌어 보세요. 두 근을 가까이 가져가면 딱 겹치면서 <span class="m">x</span>축에 접해요.</p>
+    <div class="readout" id="read2"></div>
+    <div class="mission">
+      <h2 id="m2title"></h2>
+      <p id="m2text"></p>
+      <div class="row">
+        <button class="btn primary" id="b2check">이렇게 만들었어요</button>
+        <button class="btn ghost" id="b2cant" hidden>만들 수 없다</button>
+        <button class="btn ghost" id="b2next">다음 미션</button>
+      </div>
+      <div class="fb" id="fb2" aria-live="polite"></div>
+      <div id="dem2" class="banner" hidden><span>헷갈리면 이 함수를 1단계에서 접선으로 확인해 봐요.</span><button class="btn" id="b2demote">1단계에서 보기</button></div>
+    </div>
+  </section>
+
+  <!-- 3단계 -->
+  <section class="panel" id="s3" hidden>
+    <div class="formula" id="formula3"></div>
+    <div class="coef">
+      <label for="ca"><span><span class="m">a</span><span class="hint"> (분수 가능: -3/2)</span></span><input id="ca" inputmode="text" value="0"></label>
+      <label for="cb"><span><span class="m">b</span></span><input id="cb" inputmode="text" value="0"></label>
+      <label for="cc"><span><span class="m">c</span></span><input id="cc" inputmode="text" value="0"></label>
+    </div>
+    <div class="readout" id="read3"></div>
+    <div class="mission">
+      <h2 id="m3title"></h2>
+      <p id="m3text"></p>
+      <div class="row">
+        <button class="btn primary" id="b3check">확인</button>
+        <button class="btn ghost" id="b3next">다음 미션</button>
+      </div>
+      <div class="fb" id="fb3" aria-live="polite"></div>
+      <div id="dem3" class="banner" hidden><span>2번 틀렸어요. 지금 넣은 함수를 1단계에서 접선으로 보면 극값이 어디 있는지 보여요.</span><button class="btn" id="b3demote">1단계에서 보기</button></div>
+    </div>
+  </section>
+  </div>
+  </div>
+</div>
+
+<script>
+// ═════════ 0단계 돋보기 ═════════
+(()=>{
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const narrow=()=>innerWidth<820;
+const viewH=()=>(window.visualViewport&&visualViewport.height)||innerHeight;
+// ───── 함수 조각: 에르미트 곡선 / 직선 / 다항 ─────
+const herm=(x0,y0,m0,x1,y1,m1)=>x=>{const h=x1-x0,t=(x-x0)/h;
+  return (2*t**3-3*t**2+1)*y0+(t**3-2*t**2+t)*h*m0+(-2*t**3+3*t**2)*y1+(t**3-t**2)*h*m1};
+const line=(x0,y0,x1,y1)=>x=>y0+(y1-y0)*(x-x0)/(x1-x0);
+// seg: {a,b,f,ia,ib} (ia/ib: 끝점 포함 여부), pts: 따로 찍힌 점 {x,y}
+const P=[
+  {name:'학습지 그림 1 (연속, 뾰족)',x0:-0.6,x1:6.6,pts:[],
+   segs:[{a:-0.6,b:1,f:herm(-0.6,0.3,2,1,2,0),ia:1,ib:1},{a:1,b:2.5,f:herm(1,2,0,2.5,1,0),ia:1,ib:1},{a:2.5,b:4,f:herm(2.5,1,0,4,5,3),ia:1,ib:1},
+         {a:4,b:5,f:line(4,5,5,3.5),ia:1,ib:1},{a:5,b:6.6,f:line(5,3.5,6.6,6),ia:1,ib:1}],
+   marks:[['p',1],['q',2.5],['r',4],['s',5]]},
+  {name:'학습지 그림 2 (불연속)',x0:-0.6,x1:6.6,pts:[{x:1,y:4.2}],
+   segs:[{a:-0.6,b:1,f:herm(-0.6,0.6,2.5,1,3,0),ia:1,ib:0},{a:1,b:2.5,f:herm(1,3,0,2.5,0.8,-0.5),ia:0,ib:1},
+         {a:2.5,b:4.5,f:herm(2.5,2,0.6,4.5,3.5,0.9),ia:0,ib:1},{a:4.5,b:6.6,f:herm(4.5,4.5,0.6,6.6,6,0.8),ia:0,ib:1}],
+   marks:[['p',1],['q',2.5],['r',4.5]]},
+  {name:'학습지 그림 3 (상수함수)',x0:-3,x1:3,pts:[],segs:[{a:-3,b:3,f:()=>1.5,ia:1,ib:1}],marks:[['p',-1.5],['q',0.5],['r',2]]},
+  {name:'y = x³',x0:-2,x1:2,pts:[],segs:[{a:-2,b:2,f:x=>x**3,ia:1,ib:1}],marks:[['p',0],['q',1]]},
+  {name:'y = |x|',x0:-2,x1:2,pts:[],segs:[{a:-2,b:2,f:x=>Math.abs(x),ia:1,ib:1}],marks:[['p',0],['q',-1]]},
+  {name:'구멍 난 봉우리',x0:-2,x1:2,pts:[{x:0,y:1}],
+   segs:[{a:-2,b:0,f:x=>3-x*x,ia:1,ib:0},{a:0,b:2,f:x=>3-x*x,ia:0,ib:1}],marks:[['p',0],['q',1]]},
+];
+function fval(g,x){for(const p of g.pts)if(Math.abs(p.x-x)<1e-9)return p.y;
+  for(const s of g.segs){if(x>s.a&&x<s.b)return s.f(x);if(Math.abs(x-s.a)<1e-9&&s.ia)return s.f(x);if(Math.abs(x-s.b)<1e-9&&s.ib)return s.f(x)}return NaN}
+
+// ───── 판정 ─────
+function test(g,a,d){const fa=fval(g,a);let le=true,ge=true;const N=400;
+  const xs=[];for(let i=0;i<=N;i++)xs.push(a-d+2*d*i/N);for(const p of g.pts)if(Math.abs(p.x-a)<d)xs.push(p.x);for(const s of g.segs){for(const e of[s.a,s.b])if(Math.abs(e-a)<d)xs.push(e)}
+  for(const x of xs){if(x<=a-d||x>=a+d)continue;const y=fval(g,x);if(!isFinite(y))continue;if(y>fa+1e-9)le=false;if(y<fa-1e-9)ge=false}
+  return{le,ge,fa}}
+function truth(g,a){let mx=false,mn=false;for(const d of[0.6,0.3,0.15,0.08,0.04,0.02,0.01]){const t=test(g,a,d);mx=mx||t.le;mn=mn||t.ge}
+  return mx&&mn?'both':mx?'max':mn?'min':'none'}
+
+// ───── 상태 ─────
+const st={g:P[0],gi:0,a:1,q:null,score:0,tries:0};
+const delta=()=>parseFloat($('LDelta').value);
+const effD=()=>Math.max(0.02,Math.min(delta(),st.a-st.g.x0-0.02,st.g.x1-st.a-0.02));
+const RAIL=50,LET=18; // 그래프 아래: 글자 줄(p q r s) + 조절 막대
+
+// ───── 그리기 도구 ─────
+function setup(cv,h){const dpr=devicePixelRatio||1,w=cv.clientWidth;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.height=h+'px';
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,w,h);return{c,w,h}}
+function view(w,h,x0,x1,y0,y1,pad=10){return{X:x=>pad+(x-x0)/(x1-x0)*(w-2*pad),Y:y=>pad+(y1-y)/(y1-y0)*(h-2*pad),inv:px=>x0+(px-pad)/(w-2*pad)*(x1-x0),x0,x1,y0,y1,w,h}}
+function yr(g,x0,x1){let lo=Infinity,hi=-Infinity;for(let i=0;i<=400;i++){const y=fval(g,x0+(x1-x0)*i/400);if(isFinite(y)){lo=Math.min(lo,y);hi=Math.max(hi,y)}}
+  for(const p of g.pts){if(p.x>=x0&&p.x<=x1){lo=Math.min(lo,p.y);hi=Math.max(hi,p.y)}}return[lo,hi]}
+function drawGraph(c,v,g,lw,colorFn){
+  for(const s of g.segs){c.lineWidth=lw;c.lineCap='round';let prev=null;
+    for(let i=0;i<=v.w;i++){const x=v.inv(i);if(x<s.a||x>s.b){prev=null;continue}const y=s.f(x),px=i,py=v.Y(y);
+      if(prev){c.strokeStyle=colorFn?colorFn(x,y):css('--ink');c.beginPath();c.moveTo(prev[0],prev[1]);c.lineTo(px,py);c.stroke()}prev=[px,py]}}
+  // 끝점: 포함이면 채운 점, 아니면 빈 점 (경계가 다른 조각과 이어지는 곳은 생략)
+  const ends=[];for(const s of g.segs){ends.push({x:s.a,y:s.f(s.a),inc:s.ia},{x:s.b,y:s.f(s.b),inc:s.ib})}
+  for(const e of ends){if(e.x<=g.x0+1e-9||e.x>=g.x1-1e-9)continue;if(e.x<v.x0||e.x>v.x1)continue;
+    const same=ends.filter(o=>Math.abs(o.x-e.x)<1e-9&&Math.abs(o.y-e.y)<1e-9);if(same.length>1&&same.some(o=>o.inc))continue;
+    c.beginPath();c.arc(v.X(e.x),v.Y(e.y),4.5,0,7);c.lineWidth=1.8;if(e.inc){c.fillStyle=css('--ink');c.fill()}else{c.fillStyle=css('--panel');c.fill();c.strokeStyle=css('--ink');c.stroke()}}
+  for(const p of g.pts){if(p.x<v.x0||p.x>v.x1)continue;c.beginPath();c.arc(v.X(p.x),v.Y(p.y),4.5,0,7);c.fillStyle=css('--ink');c.fill()}}
+function rrect(c,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+// (a, f(a)) 표시: 보라 마름모 (점과 헷갈리지 않게)
+function diamond(c,x,y,r){c.beginPath();c.moveTo(x,y-r);c.lineTo(x+r,y);c.lineTo(x,y+r);c.lineTo(x-r,y);c.closePath();
+  c.lineWidth=4.5;c.strokeStyle=css('--panel');c.stroke();c.lineWidth=2.2;c.strokeStyle=css('--lens');c.stroke()}
+// 손잡이: 보라 알약 + 흰 줄무늬
+function pill(c,x,y,w,h){c.fillStyle=css('--lens');rrect(c,x-w/2,y-h/2,w,h,h/2);c.fill();
+  c.strokeStyle=css('--panel');c.lineWidth=1.4;c.beginPath();for(const dx of[-3,0,3]){c.moveTo(x+dx,y-h/2+4);c.lineTo(x+dx,y+h/2-4)}c.stroke()}
+function axes(c,v){c.strokeStyle=css('--axis');c.lineWidth=1;c.beginPath();c.moveTo(0,v.Y(0));c.lineTo(v.w,v.Y(0));if(v.x0<0&&v.x1>0){c.moveTo(v.X(0),0);c.lineTo(v.X(0),v.h)}c.stroke()}
+
+// ───── 높이: 넓은 화면은 예전 비율, 폰은 아래 퀴즈 바를 뺀 나머지에 맞춤 ─────
+function heights(){const H=viewH();
+  if(!narrow())return[Math.max(220,Math.round((H-330)*0.55)),Math.max(160,Math.round((H-330)*0.45))];
+  const bar=$('LQuiz').offsetHeight||130,top=$('LPlots').getBoundingClientRect().top+scrollY;
+  const avail=H-bar-top-RAIL-LET-10-34-28-14;
+  return[Math.max(110,Math.round(avail*0.55)),Math.max(90,Math.round(avail*0.45))]}
+
+function draw(){
+  if($('s0').hidden)return;
+  const g=st.g,d=effD(),[gH,hZ]=heights();
+  // 전체 그래프 + 글자 줄 + 조절 막대
+  let {c,w,h}=setup($('LCvMain'),gH+LET+RAIL);let [lo,hi]=yr(g,g.x0,g.x1);const pad=(hi-lo)*0.15||1;lo=Math.min(lo-pad,0-pad*0.3);hi=hi+pad;
+  const vM=view(w,gH,g.x0,g.x1,lo,hi);axes(c,vM);
+  const fa=fval(g,st.a);
+  // 렌즈 높이 = 확대창 높이: f(a)를 가운데로 구간 안 그래프가 모두 들어가게 (너무 납작하면 최소 30px)
+  const [zl,zh]=yr(g,st.a-d,st.a+d);let span=Math.max(Math.abs(zh-fa),Math.abs(fa-zl),0.05)*1.25;
+  span=Math.max(span,15*(vM.y1-vM.y0)/(vM.h-20));
+  const L={x0:vM.X(st.a-d),x1:vM.X(st.a+d),y0:Math.max(1,vM.Y(fa+span)),y1:Math.min(gH-1,vM.Y(fa-span))};L.yb=L.y1;
+  c.fillStyle=css('--lens');c.globalAlpha=0.07;rrect(c,L.x0,L.y0,L.x1-L.x0,L.y1-L.y0,12);c.fill();c.globalAlpha=1;
+  drawGraph(c,vM,g,2.4,(x,y)=>(x>st.a-d&&x<st.a+d)?(y>fa+1e-9?css('--up'):y<fa-1e-9?css('--down'):css('--flat')):css('--ink'));
+  c.strokeStyle=css('--lens');c.lineWidth=1.8;rrect(c,L.x0,L.y0,L.x1-L.x0,L.y1-L.y0,12);c.stroke();
+  // 눈금 이름 p q r s
+  c.font='italic 14px '+css('--f-math');c.textAlign='center';
+  for(const [n,x] of g.marks){c.strokeStyle=css('--line');c.lineWidth=1;c.beginPath();c.moveTo(vM.X(x),gH);c.lineTo(vM.X(x),gH+4);c.stroke();c.fillStyle=css('--muted');c.fillText(n,vM.X(x),gH+16)}
+  // 조절 막대: 열린구간 ( ) + 손잡이 (가운데 = a, 양 끝 = δ)
+  const ry=gH+LET+18,xa=vM.X(st.a);
+  c.strokeStyle=css('--line');c.lineWidth=3;c.lineCap='round';c.beginPath();c.moveTo(vM.X(g.x0),ry);c.lineTo(vM.X(g.x1),ry);c.stroke();
+  c.strokeStyle=css('--lens');c.globalAlpha=.85;c.lineWidth=5;c.lineCap='butt';c.beginPath();c.moveTo(L.x0+4,ry);c.lineTo(L.x1-4,ry);c.stroke();c.globalAlpha=1;
+  c.lineWidth=2.6;c.lineCap='round';
+  c.beginPath();c.arc(L.x0+11,ry,13,Math.PI*0.72,Math.PI*1.28);c.stroke();      // (
+  c.beginPath();c.arc(L.x1-11,ry,13,-Math.PI*0.28,Math.PI*0.28);c.stroke();     // )
+  // 렌즈 아래 모서리 ↔ 괄호, 마름모 ↔ 가운데 손잡이를 옅은 세로 점선으로
+  c.setLineDash([3,4]);c.lineWidth=1.2;c.globalAlpha=.45;c.beginPath();
+  c.moveTo(L.x0,L.y1);c.lineTo(L.x0,ry-12);c.moveTo(L.x1,L.y1);c.lineTo(L.x1,ry-12);c.moveTo(xa,vM.Y(fa)+11);c.lineTo(xa,ry-10);c.stroke();c.setLineDash([]);c.globalAlpha=1;
+  for(const ex of[L.x0,L.x1]){c.fillStyle=css('--lens');rrect(c,ex-6,ry+11,12,9,4);c.fill()}
+  pill(c,xa,ry,30,18);
+  diamond(c,xa,vM.Y(fa),10);
+  L.yb=ry+20;st._L=L;st._vM=vM;st._ry=ry;
+  // 돋보기 안
+  ({c,w,h}=setup($('LCvZoom'),hZ));
+  const vZ=view(w,h,st.a-d,st.a+d,fa-span,fa+span,14);
+  c.fillStyle=css('--up');c.globalAlpha=0.07;c.fillRect(0,0,w,vZ.Y(fa));c.fillStyle=css('--down');c.fillRect(0,vZ.Y(fa),w,h-vZ.Y(fa));c.globalAlpha=1;
+  c.strokeStyle=css('--lens');c.lineWidth=1.5;c.setLineDash([6,4]);c.beginPath();c.moveTo(0,vZ.Y(fa));c.lineTo(w,vZ.Y(fa));c.stroke();c.setLineDash([]);
+  c.fillStyle=css('--lens');c.font='600 12px '+css('--f-body');c.textAlign='right';c.fillText('높이 f(a)',w-12,vZ.Y(fa)-6);
+  drawGraph(c,vZ,g,3,(x,y)=>y>fa+1e-9?css('--up'):y<fa-1e-9?css('--down'):css('--flat'));
+  diamond(c,vZ.X(st.a),vZ.Y(fa),11);
+  c.font='600 12px '+css('--f-body');c.fillStyle=css('--up');c.textAlign='right';c.fillText('f(a)보다 높은 곳',w-12,20);c.fillStyle=css('--down');c.fillText('f(a)보다 낮은 곳',w-12,h-10);
+  c.strokeStyle=css('--lens');c.lineWidth=2.5;rrect(c,1.5,1.5,w-3,h-3,14);c.stroke();
+  c.setLineDash([3,4]);c.lineWidth=1.2;c.beginPath();for(const ex of[vZ.X(st.a-d),vZ.X(st.a+d)]){c.moveTo(ex,6);c.lineTo(ex,h-6)}c.stroke();c.setLineDash([]);
+  // 판정: 확대창 왼쪽 위 배지 (폰에서는 이게 유일한 판정 표시)
+  const t=test(g,st.a,d);
+  $('LZMax').innerHTML=`<span class="m">f</span>(<span class="m">x</span>) ≤ <span class="m">f</span>(<span class="m">a</span>)? <b>${t.le?'예':'아니오'}</b>`;$('LZMax').className='zc '+(t.le?'yes':'no');
+  $('LZMin').innerHTML=`<span class="m">f</span>(<span class="m">x</span>) ≥ <span class="m">f</span>(<span class="m">a</span>)? <b>${t.ge?'예':'아니오'}</b>`;$('LZMin').className='zc '+(t.ge?'yes':'no');
+  st._vZ=vZ;
+  $('LCMax').textContent=t.le?'예':'아니오';$('LCMax').className='mark '+(t.le?'yes':'no');
+  $('LCMin').textContent=t.ge?'예':'아니오';$('LCMin').className='mark '+(t.ge?'yes':'no');
+  $('LDVal').textContent=(d<delta()-1e-9?d.toFixed(2)+' (끝에서 줄어듦)':d.toFixed(2));
+  const near=g.marks.find(m=>Math.abs(m[1]-st.a)<1e-6);
+  $('LALab').innerHTML=`<span class="m">a</span> = ${near?'<span class="m">'+near[0]+'</span>':st.a.toFixed(2)}`;
+  $('LZLab').textContent=`δ = ${d.toFixed(2)}`;
+}
+let raf=0;const reqDraw=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;draw()})};
+
+// ───── 퀴즈 ─────
+const label={max:'극대',min:'극소',both:'극대이면서 극소',none:'둘 다 아님'};
+function newQ(){const g=st.g;const m=g.marks[Math.floor(Math.random()*g.marks.length)];
+  if(st.q&&g.marks.length>1&&st.q.m===m[0])return newQ();st.q={m:m[0],x:m[1],ans:truth(g,m[1])};st.tries=0;
+  $('LQText').innerHTML=`<span class="m">x</span> = <span class="m">${m[0]}</span> 에서 <span class="m">f</span>는?<span class="long"> 손잡이를 그 자리로 옮기고 돋보기 크기를 바꿔 본 다음 고르세요.</span>`;$('LFb').textContent=''}
+document.querySelectorAll('[data-ans]').forEach(b=>b.onclick=()=>{const q=st.q,fb=$('LFb');if(!q)return;
+  if(b.dataset.ans===q.ans){fb.className='fb ok';fb.textContent=`정답! ${label[q.ans]}.`+(q.ans==='none'?' 돋보기를 아무리 줄여도 위아래가 다 있어요.':' 돋보기를 충분히 줄이면 조건이 맞아요.');if(!st.tries)st.score++;
+    $('LScore').textContent=`한 번에 맞힌 수 ${st.score}`}
+  else{st.tries++;fb.className='fb no';fb.textContent=Math.abs(st.a-q.x)>1e-6?`먼저 가운데 손잡이를 ${q.m}로 옮겨 보세요.`:'돋보기를 더 줄여 보세요. 그래도 위아래가 다 남는지 보세요.'}});
+$('LNext').onclick=newQ;
+
+// ───── 프리셋 ─────
+function renderPresets(){const box=$('LPresets');box.innerHTML='';P.forEach((g,i)=>{const b=document.createElement('button');b.className='chip';b.textContent=g.name;
+  b.setAttribute('aria-pressed',String(i===st.gi));b.onclick=()=>{st.gi=i;st.g=g;st.a=g.marks[0][1];st.q=null;renderPresets();newQ();draw();try{localStorage.setItem('loupe-g',String(i))}catch(e){}};box.appendChild(b)})}
+
+// ───── 끌기: 막대의 가운데 손잡이(또는 그래프 아무 곳) = a, 막대의 양 끝 괄호 = δ ─────
+const cv=$('LCvMain');
+function pos(e){const r=cv.getBoundingClientRect();return{px:e.clientX-r.left,py:e.clientY-r.top}}
+function move(e){const {px}=pos(e);let x=st._vM.inv(px);const g=st.g;x=Math.max(g.x0+0.05,Math.min(g.x1-0.05,x));
+  for(const [,mx] of g.marks)if(Math.abs(mx-x)<0.12)x=mx;st.a=Math.round(x*100)/100;for(const [,mx] of g.marks)if(Math.abs(mx-st.a)<0.006)st.a=mx;reqDraw()}
+let mode='a';
+function hitEdge(e){const L=st._L;if(!L)return 0;const {px,py}=pos(e);if(py<st._ry-24)return 0; // 막대 줄에서만
+  const tol=e.pointerType==='touch'?24:16,dl=Math.abs(px-L.x0),dr=Math.abs(px-L.x1),dc=Math.abs(px-st._vM.X(st.a));
+  if(Math.min(dl,dr)>tol||dc<Math.min(dl,dr))return 0;return dl<dr?-1:1}
+function moveDelta(e){const {px}=pos(e);const x=st._vM.inv(px);
+  let d=Math.abs(x-st.a);d=Math.round(d*20)/20;d=Math.max(0.05,Math.min(1.5,d));$('LDelta').value=d;reqDraw()}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);mode=hitEdge(e)?'d':'a';if(mode==='d')moveDelta(e);else move(e)});
+cv.addEventListener('pointermove',e=>{if(cv.hasPointerCapture(e.pointerId)){mode==='d'?moveDelta(e):move(e)}else cv.style.cursor=hitEdge(e)?'ew-resize':'grab'});
+$('LDelta').addEventListener('input',draw);
+
+try{const s=+localStorage.getItem('loupe-g');if(s>=0&&s<P.length&&localStorage.getItem('loupe-g')!==null){st.gi=s;st.g=P[s]}}catch(e){}
+st.a=st.g.marks[0][1];renderPresets();newQ();
+// 탐구실이 0단계로 바꿀 때 부름. 퀴즈 바 높이 변화는 탐구실의 syncBar가 처리
+window.loupeDraw=draw;
+try{new ResizeObserver(()=>{window.labSyncBar&&window.labSyncBar()}).observe($('LQuiz'))}catch(e){}
+addEventListener('resize',reqDraw);window.visualViewport&&visualViewport.addEventListener('resize',reqDraw);
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.fonts&&document.fonts.ready.then(draw);
+})();
+</script>
+<script>
+(()=>{
+// ───────── 수학 도구 ─────────
+const ev=(c,x)=>{let s=0;for(let i=c.length-1;i>=0;i--)s=s*x+c[i];return s};
+const der=c=>c.slice(1).map((v,i)=>v*(i+1));
+const integ=c=>[0,...c.map((v,i)=>v/(i+1))];
+const mul=(p,q)=>{const r=Array(p.length+q.length-1).fill(0);p.forEach((a,i)=>q.forEach((b,j)=>r[i+j]+=a*b));return r};
+const fromRoots=(k,rs)=>rs.reduce((p,r)=>mul(p,[-r,1]),[k]);
+const fmt=v=>{if(Math.abs(v)<5e-3)return'0';const r=Math.round(v*100)/100;return(r<0?'−':'')+Math.abs(r)};
+const parseNum=s=>{s=String(s).trim().replace(/[−–]/g,'-');if(!s)return NaN;if(s.includes('/')){const[a,b]=s.split('/');return parseFloat(a)/parseFloat(b)}return parseFloat(s)};
+const polyStr=c=>{ // 높은 차수부터 f(x)= 표기
+  let out='';for(let i=c.length-1;i>=0;i--){const v=Math.round(c[i]*1000)/1000;if(Math.abs(v)<1e-9)continue;
+    const a=Math.abs(v),sg=v<0?' − ':(out?' + ':'');const co=(a===1&&i>0)?'':fmt(a).replace('−','');
+    out+=(out?sg:(v<0?'−':''))+co+(i>1?`x<sup>${i}</sup>`:i===1?'x':'')}return out||'0'};
+
+// 함수 객체: {f, d, label, poly?}
+const polyFn=(c,label)=>({f:x=>ev(c,x),d:x=>ev(der(c),x),poly:c,label:label||polyStr(c)});
+const PRESETS=[
+  {key:'p1',name:'x³−3x',fn:polyFn([0,-3,0,1])},
+  {key:'p2',name:'−x³+3x²',fn:polyFn([0,0,3,-1])},
+  {key:'p3',name:'x³',fn:polyFn([0,0,0,1])},
+  {key:'p4',name:'x⁴−2x²',fn:polyFn([0,0,-2,0,1])},
+  {key:'p5',name:'|x²−1|',fn:{f:x=>Math.abs(x*x-1),d:x=>Math.abs(x)===1?NaN:2*x*Math.sign(x*x-1),label:'|x<sup>2</sup> − 1|',dLabel:'2x (|x|>1), −2x (|x|<1)',corner:[-1,1]}}
+];
+
+// 극값 찾기: f′ 부호 변화 (미분 불가능한 점 포함), 부호 변화 없는 f′=0 도 따로
+function analyze(fn,x0,x1){
+  const N=1600,ex=[],flat=[],h=(x1-x0)/N;
+  const sgn=v=>(!isFinite(v)||Math.abs(v)<1e-9)?0:Math.sign(v);
+  let lastS=0,lastX=x0,zeroStart=null;
+  for(let i=0;i<=N;i++){const x=x0+h*i,s=sgn(fn.d(x));
+    if(s===0){if(zeroStart===null)zeroStart=x;continue}
+    if(lastS!==0&&s!==lastS){let xc;
+      if(zeroStart!==null)xc=(zeroStart+(x-h))/2;
+      else{let lo=lastX,hi=x;for(let k=0;k<50;k++){const m=(lo+hi)/2;if(sgn(fn.d(m))===lastS)lo=m;else hi=m}xc=(lo+hi)/2}
+      xc=Math.round(xc*100)/100;
+      ex.push({x:xc,type:lastS>0?'max':'min',y:fn.f(xc),nd:!!(fn.corner&&fn.corner.some(c=>Math.abs(c-xc)<1e-3))})}
+    lastS=s;lastX=x;zeroStart=null}
+  if(fn.poly){const dp=der(fn.poly);for(let i=1;i<N;i++){const x=x0+h*i;
+      const a=Math.abs(ev(dp,x-h)),b=Math.abs(ev(dp,x)),c=Math.abs(ev(dp,x+h));
+      if(b<=a&&b<=c&&b<2e-3){const xr=Math.round(x*100)/100;
+        if(!ex.some(e=>Math.abs(e.x-xr)<0.05)&&!flat.some(z=>Math.abs(z-xr)<0.05))flat.push(xr)}}}
+  return{ex,flat};
+}
+
+// ───────── 그래프 그리기 ─────────
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function plotH(cv){const wide=innerWidth>=820,H=innerHeight;
+  if(wide){const avail=Math.max(340,H-265);return cv.id==='cvF'?Math.round(avail*0.54):Math.round(avail*0.46)}
+  const VH=(window.visualViewport&&visualViewport.height)||H,mis=curMission(),bar=mis?mis.offsetHeight:0;
+  const top=$('plots').getBoundingClientRect().top+scrollY,avail=VH-bar-top-2*26-12;
+  return cv.id==='cvF'?Math.round(Math.max(130,avail*0.5)):Math.round(Math.max(140,avail*0.5))}
+function curMission(){return st.stage===0?$('LQuiz'):document.querySelector('#s'+st.stage+' .mission')}
+function setupCanvas(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=plotH(cv);
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.height=h+'px';const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h}}
+function yRange(fn,x0,x1,minSpan){let lo=Infinity,hi=-Infinity;for(let i=0;i<=300;i++){const y=fn(x0+(x1-x0)*i/300);if(isFinite(y)){lo=Math.min(lo,y);hi=Math.max(hi,y)}}
+  if(!isFinite(lo)){lo=-1;hi=1}lo=Math.max(lo,-40);hi=Math.min(hi,40);
+  if(hi-lo<minSpan){const m=(hi+lo)/2;lo=m-minSpan/2;hi=m+minSpan/2}const p=(hi-lo)*0.14;lo-=p;hi+=p;
+  if(lo>0)lo=-p;if(hi<0)hi=p;return[lo,hi]}
+function makeView(w,h,x0,x1,y0,y1){const L=8,R=8,T=8,B=8;return{x0,x1,y0,y1,w,h,
+  X:x=>L+(x-x0)/(x1-x0)*(w-L-R),Y:y=>T+(y1-y)/(y1-y0)*(h-T-B),inv:px=>x0+(px-L)/(w-L-R)*(x1-x0)}}
+function grid(ctx,v){ctx.lineWidth=1;ctx.strokeStyle=css('--line');ctx.beginPath();
+  for(let x=Math.ceil(v.x0);x<=v.x1;x++){ctx.moveTo(v.X(x),0);ctx.lineTo(v.X(x),v.h)}ctx.stroke();
+  ctx.strokeStyle=css('--axis');ctx.beginPath();ctx.moveTo(0,v.Y(0));ctx.lineTo(v.w,v.Y(0));ctx.moveTo(v.X(0),0);ctx.lineTo(v.X(0),v.h);ctx.stroke();
+  ctx.fillStyle=css('--muted');ctx.font='11px '+css('--f-body');ctx.textAlign='center';
+  for(let x=Math.ceil(v.x0);x<=v.x1;x++){if(x===0)continue;ctx.fillText(String(x).replace('-','−'),v.X(x),Math.min(v.h-3,Math.max(12,v.Y(0)+14)))}}
+function curve(ctx,v,f,color,width){ctx.strokeStyle=color;ctx.lineWidth=width||2.2;ctx.beginPath();let pen=false;
+  for(let i=0;i<=v.w;i++){const x=v.inv(i),y=f(x);if(!isFinite(y)){pen=false;continue}const py=v.Y(y);
+    if(py<-200||py>v.h+200){pen=false;continue}if(!pen){ctx.moveTo(i,py);pen=true}else ctx.lineTo(i,py)}ctx.stroke()}
+function curveSigned(ctx,v,f,d,width,only,breaks){ // d의 부호로 색칠. only(x)가 false면 건너뜀. breaks: 이 x를 지날 때 선을 끊음(불연속)
+  ctx.lineWidth=width||3;ctx.lineCap='round';let prev=null,ps=null,px0=null;
+  for(let i=0;i<=v.w;i++){const x=v.inv(i),y=f(x),dv=d(x);const cross=breaks&&px0!==null&&breaks.some(c=>px0<c&&c<=x);px0=x;if(cross)prev=null;if(!isFinite(y)||!isFinite(dv)||(only&&!only(x))){prev=null;continue}
+    const py=v.Y(y);if(py<-200||py>v.h+200){prev=null;continue}const s=Math.abs(dv)<1e-6?0:Math.sign(dv);
+    if(prev){ctx.strokeStyle=signColor(s);ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(i,py);ctx.stroke()}prev=[i,py]}}
+function diamond(ctx,x,y,r,color){ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();
+  ctx.lineWidth=4.5;ctx.strokeStyle=css('--panel');ctx.stroke();ctx.lineWidth=2.4;ctx.strokeStyle=color;ctx.stroke()}
+function grip(ctx,x,y,w,h,color){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect?ctx.roundRect(x-w/2,y-h/2,w,h,h/2):ctx.rect(x-w/2,y-h/2,w,h);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=css('--panel');ctx.stroke();ctx.lineWidth=1.4;ctx.beginPath();for(const dx of[-3,0,3]){ctx.moveTo(x+dx,y-h/2+4);ctx.lineTo(x+dx,y+h/2-4)}ctx.stroke()}
+function dot(ctx,x,y,r,fill,stroke){ctx.beginPath();ctx.arc(x,y,r,0,7);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.lineWidth=2;ctx.strokeStyle=stroke;ctx.stroke()}}
+const signColor=s=>s>0?css('--up'):s<0?css('--down'):css('--flat');
+
+// ───────── 상태 ─────────
+const X0=-3.2,X1=3.2;
+const st={stage:1,fn:PRESETS[0].fn,presetKey:'p1',px:-2,trail:new Map(),found:[],ret:null,
+  s2:{deg:3,k:1,roots:[-1,1.5],mi:0,wrong:0},s3:{mi:0,wrong:0}};
+const $=id=>document.getElementById(id);
+const cvF=$('cvF'),cvD=$('cvD');
+
+function currentFn(){
+  if(st.stage===2){const s=st.s2,dp=fromRoots(s.k*(s.deg===3?3:0.6),s.roots),p=integ(dp);return polyFn(p)}
+  if(st.stage===3){const a=parseNum($('ca').value),b=parseNum($('cb').value),c=parseNum($('cc').value);
+    return polyFn([isFinite(c)?c:0,isFinite(b)?b:0,isFinite(a)?a:0,1])}
+  return st.fn}
+
+// 2단계 화면 범위: 끄는 동안 축이 튀지 않도록 넓어지기만 하고, 손을 떼면 부드럽게 다시 맞춤
+const VR={};
+function reqDraw(){if(!st._raf)st._raf=requestAnimationFrame(()=>{st._raf=0;draw()})}
+function easeRange(key,t){
+  if(st.stage!==2){delete VR[key];return t}
+  let c=VR[key];if(!c){VR[key]=t.slice();return t}
+  if(dragRoot>=0){const g=[Math.min(c[0],t[0]),Math.max(c[1],t[1])];c[0]+=(g[0]-c[0])*0.35;c[1]+=(g[1]-c[1])*0.35;
+    if(Math.abs(g[0]-c[0])+Math.abs(g[1]-c[1])>1e-3*(g[1]-g[0]))reqDraw();else{c[0]=g[0];c[1]=g[1]}}
+  else{c[0]+=(t[0]-c[0])*0.18;c[1]+=(t[1]-c[1])*0.18;
+    if(Math.abs(t[0]-c[0])+Math.abs(t[1]-c[1])>2e-3*(t[1]-t[0]))reqDraw();else{c[0]=t[0];c[1]=t[1]}}
+  return c.slice()}
+function draw(){
+  if(st.stage===0)return;
+  const fn=currentFn(),an=analyze(fn,X0,X1);
+  // f
+  let {ctx,w,h}=setupCanvas(cvF);ctx.clearRect(0,0,w,h);
+  let [y0,y1]=easeRange('f',yRange(fn.f,X0,X1,4));const vF=makeView(w,h,X0,X1,y0,y1);grid(ctx,vF);
+  if(st.stage===1){curve(ctx,vF,fn.f,css('--axis'),2);curveSigned(ctx,vF,fn.f,fn.d,4,x=>st.trail.has(Math.round(x*50)))}
+  else curveSigned(ctx,vF,fn.f,fn.d,3.2);
+  {for(const e of an.ex){const px=vF.X(e.x),py=vF.Y(e.y);
+      if(st.stage!==1||st.found.some(f=>Math.abs(f.x-e.x)<0.25&&f.type===e.type)){
+        ctx.fillStyle=css('--ink');ctx.font='600 12px '+css('--f-body');ctx.textAlign='center';
+        ctx.fillText(e.type==='max'?'극대':'극소',px,e.type==='max'?py-12:py+20);dot(ctx,px,py,4.5,css('--ink'))}}}
+  if(st.stage===1){ // 점과 접선
+    const x=st.px,y=fn.f(x),m=fn.d(x),px=vF.X(x),py=vF.Y(y);
+    if(isFinite(m)){const s=Math.abs(m)<0.04?0:Math.sign(m),dx=1.1;
+      ctx.strokeStyle=signColor(s);ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(vF.X(x-dx),vF.Y(y-m*dx));ctx.lineTo(vF.X(x+dx),vF.Y(y+m*dx));ctx.stroke();
+      diamond(ctx,px,py,10,signColor(s))}
+    else{ctx.fillStyle=css('--warn');ctx.font='600 12px '+css('--f-body');ctx.textAlign='center';ctx.fillText('뾰족: 접선 없음',px,py-16);diamond(ctx,px,py,10,css('--warn'))}
+  }
+  // f′
+  ({ctx,w,h}=setupCanvas(cvD));ctx.clearRect(0,0,w,h);
+  const BAND=34,ph=h-BAND;
+  [y0,y1]=yRange(fn.d,-2.4,2.4,3);y0=Math.max(y0,-9);y1=Math.min(y1,9);[y0,y1]=easeRange('d',[y0,y1]);const vD=makeView(w,ph,X0,X1,y0,y1);
+  ctx.save();ctx.beginPath();ctx.rect(0,0,w,ph);ctx.clip();
+  for(let i=0;i<=w;i++){const x=vD.inv(i),d=fn.d(x);if(!isFinite(d))continue;const s=Math.abs(d)<1e-9?0:Math.sign(d);
+    ctx.fillStyle=signColor(s);ctx.globalAlpha=0.22;ctx.fillRect(i,Math.min(vD.Y(0),vD.Y(d)),1,Math.abs(vD.Y(d)-vD.Y(0)));ctx.globalAlpha=1}
+  grid(ctx,vD);curveSigned(ctx,vD,fn.d,fn.d,3,null,fn.corner);
+  // f′가 존재하지 않는 점: 양쪽 끝을 빈 구멍으로
+  if(fn.corner)for(const c of fn.corner){for(const e of[-1e-7,1e-7]){const y=fn.d(c+e);if(!isFinite(y))continue;
+    dot(ctx,vD.X(c),vD.Y(y),5,css('--panel'),signColor(Math.sign(y)))}}
+  ctx.restore();
+  // 부호 띠: 구간마다 + / − 와 경계의 x값
+  const segs=[];let cur=null;
+  for(let i=0;i<=w;i++){const x=vD.inv(i),d=fn.d(x),sg=!isFinite(d)?null:Math.abs(d)<1e-6?0:Math.sign(d);
+    if(sg===0||sg===null)continue;if(!cur||cur.s!==sg){if(cur)cur.e=i;cur={s:sg,b:i,e:w};segs.push(cur)}}
+  const by=ph+4,bh=BAND-8;
+  segs.forEach((g,k)=>{ctx.fillStyle=signColor(g.s);ctx.globalAlpha=0.9;ctx.fillRect(g.b,by,Math.max(1,g.e-g.b),bh);ctx.globalAlpha=1;
+    ctx.fillStyle=css('--panel');ctx.font='700 18px '+css('--f-body');ctx.textAlign='center';ctx.textBaseline='middle';
+    if(g.e-g.b>18)ctx.fillText(g.s>0?'+':'−',(g.b+g.e)/2,by+bh/2+1);ctx.textBaseline='alphabetic'});
+  for(let k=1;k<segs.length;k++){const bx=segs[k].b;ctx.fillStyle=css('--panel');ctx.fillRect(bx-1,by,2,bh)}
+  for(const z of an.flat){dot(ctx,vD.X(z),vD.Y(0),6,css('--flat'));ctx.fillStyle=css('--panel');ctx.fillRect(vD.X(z)-1,by,2,bh);ctx.fillStyle=css('--flat');ctx.font='600 11px '+css('--f-body');ctx.textAlign='center';ctx.fillText('부호 그대로',vD.X(z),by-4)}
+  if(st.stage===1){ctx.strokeStyle=css('--muted');ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(vD.X(st.px),0);ctx.lineTo(vD.X(st.px),h);ctx.stroke();ctx.setLineDash([]);
+    const d=fn.d(st.px);if(isFinite(d))diamond(ctx,vD.X(st.px),vD.Y(d),6,css('--curve2'));
+    grip(ctx,vD.X(st.px),by+bh/2,30,20,css('--curve2'))}
+  // 2단계: 근은 x축 위 작은 마름모, 끄는 손잡이는 아래 부호 띠 위의 알약
+  if(st.stage===2){for(const r of st.s2.roots){const px=vD.X(r);diamond(ctx,px,vD.Y(0),6,css('--curve2'));grip(ctx,px,by+bh/2,26,20,css('--curve2'))}}
+  st._vF=vF;st._vD=vD;st._an=an;
+  $('fLabel').innerHTML='<span class="m">f</span>(<span class="m">x</span>) = '+fn.label;
+  $('dLabel').innerHTML=fn.poly?'<span class="m">f′</span>(<span class="m">x</span>) = '+polyStr(der(fn.poly)):fn.dLabel?'<span class="m">f′</span>(<span class="m">x</span>) = '+fn.dLabel:'';
+  readouts(fn,an);
+  overlay(fn,an,vF,vD);
+}
+
+// f 그래프의 점과 f′ 그래프의 x축 점을 세로 점선으로 잇기 (극대·극소, 부호 그대로인 f′=0)
+function overlay(fn,an,vF,vD){
+  const box=$('plots'),cv=$('cvO'),dpr=window.devicePixelRatio||1,W=box.clientWidth,H=box.clientHeight;
+  cv.style.width=W+'px';cv.style.height=H+'px';cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const bb=box.getBoundingClientRect(),rF=cvF.getBoundingClientRect(),rD=cvD.getBoundingClientRect();
+  const oxF=rF.left-bb.left,oyF=rF.top-bb.top,oxD=rD.left-bb.left,oyD=rD.top-bb.top;
+  const items=[];
+  for(const e of an.ex){if(st.stage===1&&!st.found.some(f=>Math.abs(f.x-e.x)<0.25&&f.type===e.type))continue;
+    items.push({x:e.x,y:e.y,c:css(e.type==='max'?'--up':'--down'),lab:`x = ${fmt(e.x)}`,skip:e.type==='min'?26:6})}
+  for(const z of an.flat){if(st.stage===1&&!st.flatSeen)continue;items.push({x:z,y:fn.f(z),c:css('--flat'),lab:`x = ${fmt(z)}`})}
+  ctx.font='600 11px '+css('--f-body');ctx.textAlign='center';
+  for(const it of items){const x=oxF+vF.X(it.x),y1=oyF+vF.Y(it.y),y2=oyD+vD.Y(0);
+    if(y1<oyF||y1>oyF+vF.h)continue;
+    ctx.strokeStyle=it.c;ctx.lineWidth=1.6;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(x,y1+(it.skip||6));ctx.lineTo(x,y2);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=it.c;ctx.beginPath();ctx.arc(x,y2,4,0,7);ctx.fill();
+    const tw=ctx.measureText(it.lab).width+8,ty=y2+17;ctx.fillStyle=css('--panel');ctx.fillRect(x-tw/2,ty-12,tw,15);ctx.fillStyle=it.c;ctx.fillText(it.lab,x,ty)}
+}
+function extPills(an){if(!an.ex.length)return'<span class="pill none">극값 없음</span>';
+  return an.ex.map(e=>`<span class="pill ${e.type==='max'?'up':'down'}">${e.type==='max'?'극대':'극소'} x = ${fmt(e.x)}${e.nd?' (미분 불가능)':''}</span>`).join('')}
+function readouts(fn,an){
+  if(st.stage===1){const m=fn.d(st.px);let s,txt;
+    if(!isFinite(m)){s='none';txt='접선이 없어요 (뾰족한 점)'}else if(Math.abs(m)<0.04){s='flat';txt='기울기 0'}else if(m>0){s='up';txt='기울기 + → 증가'}else{s='down';txt='기울기 − → 감소'}
+    $('read1').innerHTML=`<span>x = <b>${fmt(st.px)}</b></span><span>f′(x) = <b>${isFinite(m)?fmt(m):'없음'}</b></span><span class="pill ${s}">${txt}</span>`}
+  if(st.stage===2){const rs=[...st.s2.roots].sort((a,b)=>a-b);$('read2').innerHTML=`<span>f′(x) = 0 인 x: <b>${rs.filter((r,i)=>i===0||r!==rs[i-1]).map(r=>fmt(r)+(rs.filter(q=>q===r).length>1?' (중근)':'')).join(', ')}</b></span>`+extPills(an)+(an.flat.length?`<span class="pill flat">f′=0 이지만 극값 아님: x = ${an.flat.map(fmt).join(', ')}</span>`:'')}
+  if(st.stage===3){$('read3').innerHTML=extPills(an)}
+}
+
+// ───────── 1단계 ─────────
+function renderPresets(){const box=$('presets');box.innerHTML='';
+  const list=[...PRESETS];if(st.custom)list.push({key:'custom',name:'방금 만든 함수',fn:st.custom});
+  for(const p of list){const b=document.createElement('button');b.className='chip';b.textContent=p.name;b.setAttribute('aria-pressed',String(st.presetKey===p.key));
+    b.onclick=()=>{st.presetKey=p.key;st.fn=p.fn;st.found=[];st.flatSeen=false;st.trail.clear();$('fb1').textContent='';renderFound();renderPresets();draw()};box.appendChild(b)}}
+function renderFound(){$('found1').innerHTML=st.found.map(f=>`<span class="pill ${f.type==='max'?'up':'down'}">${f.type==='max'?'극대':'극소'} 찾음</span>`).join('')}
+function judge1(type){const an=analyze(st.fn,X0,X1),fb=$('fb1');
+  if(type==='none'){if(!an.ex.length){st.flatSeen=true;draw();fb.className='fb ok';fb.textContent=(st.fn.poly&&an.flat.length?`맞아요. x = ${an.flat.map(fmt).join(', ')}에서 기울기가 0이 되지만 그 앞뒤로 접선 색이 그대로예요. f′(a)=0이라고 다 극값은 아니에요.`:'맞아요. 접선 색이 +에서 −(또는 −에서 +)로 바뀌는 곳이 없어요.')}
+    else{fb.className='fb no';fb.textContent='아직 극값이 있어요. 접선 색이 바뀌는 곳을 다시 찾아봐요.'}return}
+  const hit=an.ex.find(e=>e.type===type&&Math.abs(e.x-st.px)<=0.25);
+  if(hit){if(!st.found.some(f=>f.x===hit.x)){st.found.push(hit)}
+    const left=an.ex.length-st.found.length;fb.className='fb ok';
+    fb.textContent=left?`좋아요! x = ${fmt(hit.x)}에서 ${type==='max'?'극대':'극소'}. 남은 극값 ${left}개.`:'모두 찾았어요! 극대에서는 접선 색이 어떻게 바뀌었고, 극소에서는 어떻게 바뀌었나요?'}
+  else{fb.className='fb no';const near=an.ex.find(e=>Math.abs(e.x-st.px)<=0.25);
+    fb.textContent=near?'자리는 맞는데 극대·극소가 반대예요. 왼쪽 → 오른쪽으로 접선 색이 어떻게 바뀌나요?':'여기는 아니에요. 접선 색이 바뀌는 순간을 찾아봐요.'}
+  renderFound();draw()}
+$('b1max').onclick=()=>judge1('max');$('b1min').onclick=()=>judge1('min');$('b1none').onclick=()=>judge1('none');
+
+// ───────── 2단계 ─────────
+const M2=[
+  {deg:3,title:'미션 1 · 극대 x = −1, 극소 x = 2',text:'f′의 근을 옮겨서 x = −1에서 극대, x = 2에서 극소인 삼차함수를 만들어 보세요.',
+    check:an=>an.ex.length===2&&an.ex.some(e=>e.type==='max'&&Math.abs(e.x+1)<0.06)&&an.ex.some(e=>e.type==='min'&&Math.abs(e.x-2)<0.06),
+    ok:()=>st.s2.k>0?'성공! 아래 띠를 보면 x = −1에서 + → −, x = 2에서 − → + 예요. 위 f(x) 식을 x³+ax²+bx 꼴로 보면 a, b는? 3단계에서 식으로 확인해 봐요.'
+      :'성공! 아래 띠를 보면 x = −1에서 + → −, x = 2에서 − → + 예요. (위아래를 뒤집은 상태라 f(x)의 x³ 계수가 음수예요.)',
+    no:an=>{const mx=an.ex.filter(e=>e.type==='max').map(e=>fmt(e.x)),mn=an.ex.filter(e=>e.type==='min').map(e=>fmt(e.x));
+      return `지금은 극대 x = ${mx.join(', ')||'없음'}, 극소 x = ${mn.join(', ')||'없음'}. f′가 + → − 로 바뀌는 근이 극대 자리예요.`+(an.ex.some(e=>e.type==='max'&&Math.abs(e.x-2)<0.06)&&an.ex.some(e=>e.type==='min'&&Math.abs(e.x+1)<0.06)?' 자리는 맞는데 극대·극소가 반대예요. "위아래 뒤집기"를 눌러 봐요.':'')}},
+  {deg:3,title:'미션 2 · 윤서의 말 (교과서 90쪽)',text:'"삼차함수에서 f′(x)=0의 실근이 있으면 극값을 갖지!" 실근은 있는데 극값이 없는 삼차함수를 만들 수 있을까요?',
+    check:an=>an.ex.length===0,
+    ok:()=>`맞아요! x = ${fmt(st.s2.roots[0])}에서 f′(x) = 0 이지만(중근), f′가 x축에 접하기만 하고 뚫지 않아서 부호가 바뀌지 않아요. 그래서 극값이 없어요. 윤서의 말은 거짓!`,
+    no:()=>'아직 극값이 있어요. f′가 x축을 뚫고 지나가면 부호가 바뀌어요. 뚫지 않게 하려면?'},
+  {deg:4,title:'미션 3 · 건우의 말 (교과서 90쪽)',text:'"사차함수는 항상 극값을 갖지!" 아래 f′(삼차함수)의 근을 이리저리 옮기고 겹쳐 보면서, 극값이 하나도 없는 사차함수를 만들 수 있는지 확인해 보세요. 아무리 해도 안 되면 "만들 수 없다"를 누르세요.',
+    check:an=>false,cant:true,
+    no:an=>`지금은 극값이 ${an.ex.length}개 있어요. 근을 옮기고 겹쳐 봐도 0개가 되나요? 안 되면 "만들 수 없다"를 눌러요.`},
+  {deg:4,title:'미션 4 · 극값이 하나뿐인 사차함수',text:'f′(삼차함수)의 근을 옮겨서 극값이 딱 하나인 사차함수를 만들어 보세요. 극값이 0개는 안 되는데 1개는 될까요?',
+    check:an=>an.ex.length===1,
+    ok:()=>{const r=[...st.s2.roots].sort((a,b)=>a-b),e=st._an.ex[0];
+      if(r[0]===r[2])return `성공! 세 근이 x = ${fmt(r[0])}에 모두 겹쳤는데도 그곳에서 f′의 부호가 바뀌어서 극값이 하나 남아요.`;
+      const d=r[0]===r[1]?r[0]:r[1];return `성공! 겹친 x = ${fmt(d)}(중근)에서는 f′ = 0 이지만 부호가 그대로라 극값이 아니에요. 부호가 바뀌는 x = ${fmt(e.x)}에서만 ${e.type==='max'?'극대':'극소'}예요.`},
+    no:an=>`지금은 극값이 ${an.ex.length}개예요. 부호가 바뀌는 곳을 하나만 남기려면 근을 어떻게 해야 할까요?`}
+];
+function setDeg(d){st.s2.deg=d;st.s2.roots=d===3?[-1,1.5]:[-2,0,1.5];
+  document.querySelectorAll('#deg2 [data-deg]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.deg===d)))}
+function loadM2(){document.body.classList.remove('mini');const m=M2[st.s2.mi];if(st.s2.deg!==m.deg)setDeg(m.deg);
+  $('m2title').textContent=m.title;$('m2text').textContent=m.text;$('b2cant').hidden=!m.cant;$('fb2').textContent='';$('dem2').hidden=true;st.s2.wrong=0;draw()}
+document.querySelectorAll('#deg2 [data-deg]').forEach(b=>b.onclick=()=>{const d=+b.dataset.deg;if(M2[st.s2.mi].deg===d)return;st.s2.k=1;setDeg(d);st.s2.mi=M2.findIndex(m=>m.deg===d);loadM2()});
+$('flip').onclick=()=>{st.s2.k*=-1;draw()};
+function wrong2(msg){st.s2.wrong++;$('fb2').className='fb no';$('fb2').textContent=msg;if(st.s2.wrong>=2)$('dem2').hidden=false}
+$('b2check').onclick=()=>{const m=M2[st.s2.mi],an=analyze(currentFn(),X0,X1);
+  if(m.cant){wrong2(m.no(an));return}
+  if(m.check(an)){$('fb2').className='fb ok';$('fb2').textContent=m.ok(an);$('dem2').hidden=true}
+  else wrong2(m.no(an))};
+$('b2cant').onclick=()=>{$('fb2').className='fb ok';$('fb2').textContent='맞아요. f′는 삼차함수라 왼쪽 끝과 오른쪽 끝의 부호가 반대예요. 그래서 어딘가에서 반드시 부호가 바뀌고, 사차함수는 극값을 꼭 가져요. 건우의 말은 참!'};
+$('b2next').onclick=()=>{st.s2.mi=(st.s2.mi+1)%M2.length;loadM2()};
+
+// ───────── 3단계 ─────────
+const M3=[
+  {title:'미션 1 · 교과서 90쪽 예제2',text:'f(x)=x³+ax²+bx+c 가 x = −1에서 극대, x = 2에서 극소가 되는 a, b를 넣어 보세요. 2단계 그래프에서 읽은 값이 맞는지 f′(−1)=0, f′(2)=0으로 확인해요. (c는 아무 값이어도 될까요?)',
+    check:(an)=>an.ex.length===2&&an.ex.some(e=>e.type==='max'&&Math.abs(e.x+1)<0.03)&&an.ex.some(e=>e.type==='min'&&Math.abs(e.x-2)<0.03),
+    hint:'극값을 가지면 f′(−1)=0, f′(2)=0이에요. f′(x)=3x²+2ax+b 에 넣어 보세요.',
+    ok:()=>'정답! f′(−1)=0, f′(2)=0 두 식으로 a, b가 정해져요. c를 바꿔도 극값의 위치는 그대로죠? 그래프가 위아래로만 움직여요.'},
+  {title:'미션 2 · 교과서 90쪽 문제3',text:'x = 1에서 극댓값 2를 갖고, x = 3에서 극솟값을 갖는 a, b, c를 넣어 보세요.',
+    check:(an,fn)=>an.ex.some(e=>e.type==='max'&&Math.abs(e.x-1)<0.03&&Math.abs(fn.f(1)-2)<0.02)&&an.ex.some(e=>e.type==='min'&&Math.abs(e.x-3)<0.03),
+    hint:'조건이 세 개예요: f′(1)=0, f′(3)=0, f(1)=2.',
+    ok:fn=>`정답! f′(1)=0, f′(3)=0으로 a, b를, f(1)=2로 c를 정했어요. 극솟값 f(3) = ${fmt(fn.f(3))} 도 학습지에 적어 봐요.`},
+  {title:'미션 3 · 극값이 없도록',text:'a = 3일 때, 극값이 하나도 없게 되는 b를 하나 넣어 보세요. 경계가 되는 b도 찾아보세요.',
+    check:(an)=>Math.abs(parseNum($('ca').value)-3)<1e-9&&an.ex.length===0,
+    hint:'f′(x)=3x²+6x+b 의 부호가 바뀌지 않아야 해요. 판별식 D는?',
+    ok:()=>{const b=parseNum($('cb').value);return Math.abs(b-3)<1e-9
+      ?'정답! b = 3이면 f′(x) = 3(x+1)² 이라 x = −1에서 0이 되지만 부호는 그대로예요. 2단계 윤서의 말과 같은 상황이에요.'
+      :'정답! f′(x)=3x²+6x+b 가 항상 0 이상이라 부호가 바뀌지 않아요. 경계가 되는 b는 얼마일까요? 그 b일 때도 극값이 없을까요?'}}
+];
+function loadM3(){document.body.classList.remove('mini');const m=M3[st.s3.mi];$('m3title').textContent=m.title;$('m3text').textContent=m.text;$('fb3').textContent='';$('dem3').hidden=true;st.s3.wrong=0;draw()}
+function formula3(){$('formula3').innerHTML='f(x) = x<sup>3</sup> + <b>a</b>x<sup>2</sup> + <b>b</b>x + <b>c</b>'}
+['ca','cb','cc'].forEach(id=>$(id).addEventListener('input',()=>draw()));
+$('b3check').onclick=()=>{const m=M3[st.s3.mi],fn=currentFn(),an=analyze(fn,X0,X1);
+  if(['ca','cb','cc'].some(id=>!isFinite(parseNum($(id).value)))){$('fb3').className='fb no';$('fb3').textContent='a, b, c에 수를 넣어 주세요. 분수는 -3/2처럼 써요.';return}
+  if(m.check(an,fn)){$('fb3').className='fb ok';$('fb3').textContent=m.ok(fn);$('dem3').hidden=true}
+  else{st.s3.wrong++;$('fb3').className='fb no';$('fb3').textContent='아직 아니에요. '+m.hint;if(st.s3.wrong>=2)$('dem3').hidden=false}};
+$('b3next').onclick=()=>{st.s3.mi=(st.s3.mi+1)%M3.length;loadM3()};
+
+// ───────── 아래 단계로 보내기 / 돌아오기 ─────────
+function demote(from){st.flatSeen=false;st.custom=currentFn();st.custom.label=st.custom.label;st.ret=from;st.fn=st.custom;st.presetKey='custom';st.found=[];st.trail.clear();
+  $('fb1').textContent='';setStage(1);renderPresets();renderFound();$('backBanner').hidden=false;$('backText').textContent=`방금 ${from}단계에서 만든 함수를 접선으로 보고 있어요.`}
+$('b2demote').onclick=()=>demote(2);$('b3demote').onclick=()=>demote(3);
+$('backBtn').onclick=()=>{const r=st.ret;st.ret=null;$('backBanner').hidden=true;setStage(r)};
+
+// ───────── 탭 ─────────
+function setStage(n){st.stage=n;document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(+t.dataset.stage===n)));
+  [1,2,3].forEach(i=>$('s'+i).hidden=i!==n);if(n!==1&&!st.ret)$('backBanner').hidden=true;
+  $('s0').hidden=n!==0;$('mainArea').hidden=n===0;
+  try{localStorage.setItem('extrema-stage',String(n))}catch(e){}
+  document.body.classList.remove('mini');
+  if(n===0){window.loupeDraw&&loupeDraw();try{syncBar()}catch(e){}return}draw();try{syncBar()}catch(e){}}
+// 돋보기 iframe 높이를 내용에 맞춤
+
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{st.ret=null;$('backBanner').hidden=true;setStage(+t.dataset.stage)});
+
+// ───────── 끌기 ─────────
+let dragRoot=-1;
+function evX(cv,e){const r=cv.getBoundingClientRect();return{px:e.clientX-r.left,py:e.clientY-r.top}}
+function moveP(e){const {px}=evX(cvF,e);let x=st._vF.inv(px);x=Math.max(X0+0.05,Math.min(X1-0.05,x));
+  const fn=currentFn();const an=st._an||{ex:[]};for(const ex of an.ex){if(Math.abs(ex.x-x)<0.06)x=ex.x}
+  if(fn.corner)for(const c of fn.corner){if(Math.abs(c-x)<0.04)x=c}
+  const a=Math.round((st.dragging?st.px:x)*50),b=Math.round(x*50);
+  for(let k=Math.min(a,b);k<=Math.max(a,b);k++){const xx=k/50,m=fn.d(xx);if(isFinite(m))st.trail.set(k,Math.abs(m)<0.04?0:Math.sign(m))}
+  st.px=x;st.dragging=true;draw()}
+cvF.addEventListener('pointerdown',e=>{if(st.stage!==1)return;st.dragging=false;cvF.setPointerCapture(e.pointerId);moveP(e)});
+cvF.addEventListener('pointerup',()=>{st.dragging=false});
+cvF.addEventListener('pointermove',e=>{if(st.stage===1&&cvF.hasPointerCapture(e.pointerId))moveP(e)});
+// 1단계에서는 아래 그래프를 끌어도 점이 움직이게
+cvD.addEventListener('pointerdown',e=>{
+  if(st.stage===1){st.dragging=false;cvD.setPointerCapture(e.pointerId);moveP(e);return}
+  if(st.stage!==2)return;const {px}=evX(cvD,e);let best=-1,bd=40;
+  st.s2.roots.forEach((r,i)=>{const d=Math.abs(st._vD.X(r)-px);if(d<bd){bd=d;best=i}});
+  if(best>=0){dragRoot=best;cvD.setPointerCapture(e.pointerId)}});
+cvD.addEventListener('pointermove',e=>{
+  if(st.stage===1&&cvD.hasPointerCapture(e.pointerId)){moveP(e);return}
+  if(dragRoot<0)return;const {px}=evX(cvD,e);let x=st._vD.inv(px);x=Math.max(-3,Math.min(3,x));
+  // 자석: 다른 근 가까이(0.08 이내)면 딱 겹치게(중근), 0.5 눈금 가까이(0.05 이내)면 눈금에 붙게. 나머지는 0.01 단위로 연속
+  let snapped=false;st.s2.roots.forEach((r,i)=>{if(i!==dragRoot&&Math.abs(r-x)<0.08){x=r;snapped=true}});
+  if(!snapped){const g=Math.round(x*2)/2;if(Math.abs(g-x)<0.05)x=g;else x=Math.round(x*100)/100}
+  st.s2.roots[dragRoot]=x;reqDraw()});
+cvD.addEventListener('pointerup',()=>{const was=dragRoot>=0;dragRoot=-1;st.dragging=false;if(was)reqDraw()});cvD.addEventListener('pointercancel',()=>{dragRoot=-1;reqDraw()});
+
+// ───────── 시작 ─────────
+// ───────── 폰: 미션 바 접기/펼치기, 바 높이 반영, 입력 중엔 바 숨김 ─────────
+const isPhone=()=>innerWidth<820;
+let rafD=0;const reqDrawAll=()=>{if(!rafD)rafD=requestAnimationFrame(()=>{rafD=0;draw()})};
+const setMini=v=>{document.body.classList.toggle('mini',v);syncBar()};
+function syncBar(){const m=curMission();document.documentElement.style.setProperty('--barH',isPhone()&&m?m.offsetHeight+'px':'0px');if(st.stage===0){window.loupeDraw&&loupeDraw()}else reqDrawAll()}
+window.labSyncBar=syncBar;
+document.querySelectorAll('.side .mission h2').forEach(h=>h.addEventListener('click',()=>{if(isPhone())setMini(!document.body.classList.contains('mini'))}));
+[cvF,cvD].forEach(c=>c.addEventListener('pointerdown',()=>{if(isPhone()&&!document.body.classList.contains('mini'))setMini(true)}));
+try{const ro=new ResizeObserver(syncBar);document.querySelectorAll('.side .mission').forEach(m=>ro.observe(m))}catch(e){}
+['ca','cb','cc'].forEach(id=>{$(id).addEventListener('focus',()=>document.body.classList.add('typing'));$(id).addEventListener('blur',()=>{document.body.classList.remove('typing');syncBar()})});
+formula3();renderPresets();loadM2();loadM3();
+let start=1;try{const s=+localStorage.getItem('extrema-stage');if(s>=0&&s<=3&&localStorage.getItem('extrema-stage')!==null)start=s}catch(e){}
+setStage(start);
+window.addEventListener('resize',()=>draw());window.visualViewport&&visualViewport.addEventListener('resize',()=>reqDrawAll());
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>draw());
+new MutationObserver(()=>draw()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.fonts&&document.fonts.ready.then(()=>draw());
+})();
+</script>
+</body></html>
