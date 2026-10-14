@@ -38,7 +38,7 @@ h1{font-size:1.25rem;margin:0;font-weight:700;letter-spacing:-.01em}
 #s0 .lside{display:flex;flex-direction:column;gap:10px;min-width:0}
 @media (min-width:820px){#s0 .lmain{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}#s0 .lmain>section{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px)}}
 #s0 .panel{gap:8px}
-#s0 .plots{gap:10px}
+#s0 .plots{gap:8px}
 #s0 .chip{white-space:nowrap}
 .lab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
 .lab b{color:var(--ink)}
@@ -158,14 +158,14 @@ canvas{width:100%;display:block;touch-action:none;border-radius:8px;background:v
 
   <div class="lmain">
     <section class="panel">
-      <div class="lab"><span><b>전체 그래프</b> · 아래 막대의 손잡이를 끌어요</span><span id="LALab"></span></div>
-      <div class="plots" id="LPlots">
-        <canvas id="LCvMain" aria-label="전체 그래프와 돋보기 렌즈. 아래 막대의 가운데 손잡이를 끌면 a, 양 끝 괄호를 끌면 δ가 바뀜"></canvas>
-        <canvas id="LCvZoom" aria-label="돋보기로 확대한 구간"></canvas>
-        <canvas id="LCvO" class="overlay" aria-hidden="true"></canvas>
-      </div>
-      <div class="zchecks" id="LZChecks"><span class="zc-lab">구간 안 모든 <span class="m">x</span>:</span><span id="LZMax"></span><span id="LZMin"></span></div>
+      <!-- 손가락은 아래에서 올라오므로: 볼 것(확대창·판정·전체 그래프)은 위, 조절 막대는 맨 아래 -->
       <div class="lab"><span><b>돋보기 안</b> · 열린구간 (<span class="m">a</span> − δ, <span class="m">a</span> + δ)</span><span id="LZLab"></span></div>
+      <div class="plots" id="LPlots">
+        <canvas id="LCvZoom" aria-label="돋보기로 확대한 구간"></canvas>
+        <div class="zchecks" id="LZChecks"><span class="zc-lab">구간 안 모든 <span class="m">x</span>:</span><span id="LZMax"></span><span id="LZMin"></span></div>
+        <div class="lab"><span><b>전체 그래프</b> · 맨 아래 막대의 손잡이를 끌어요</span><span id="LALab"></span></div>
+        <canvas id="LCvMain" aria-label="전체 그래프와 돋보기 렌즈. 맨 아래 막대의 가운데 손잡이를 끌면 a, 양 끝 괄호를 끌면 δ가 바뀜"></canvas>
+      </div>
     </section>
 
     <div class="lside">
@@ -349,7 +349,7 @@ function axes(c,v){c.strokeStyle=css('--axis');c.lineWidth=1;c.beginPath();c.mov
 function heights(){const H=viewH();
   if(!narrow())return[Math.max(220,Math.round((H-330)*0.55)),Math.max(160,Math.round((H-330)*0.45))];
   const bar=$('LQuiz').offsetHeight||130,top=$('LPlots').getBoundingClientRect().top+scrollY;
-  const avail=H-bar-top-RAIL-LET-10-34-28-14;
+  const avail=H-bar-top-RAIL-LET-30-30-22-12;
   return[Math.max(110,Math.round(avail*0.55)),Math.max(90,Math.round(avail*0.45))]}
 
 function draw(){
