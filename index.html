@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 수업 자료 모음</title>
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--ink:#1f2328;--sub:#5b6270;--line:#e3e0d8;--c1:#2f7d5b;--c2:#2b5fb4;--c3:#8a4fbf;--hot:#c2410c;--warn:#b5651d;--code:#f0eee8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181b;--card:#202226;--ink:#e8e8ea;--sub:#a3a8b3;--line:#33363c;--c1:#5cc195;--c2:#7aa6f0;--c3:#c193ec;--hot:#f08a5d;--warn:#e3a35f;--code:#2a2c31}}
+:root[data-theme="dark"]{--bg:#17181b;--card:#202226;--ink:#e8e8ea;--sub:#a3a8b3;--line:#33363c;--c1:#5cc195;--c2:#7aa6f0;--c3:#c193ec;--hot:#f08a5d;--warn:#e3a35f;--code:#2a2c31}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+main{max-width:820px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:1.55rem;margin:0 0 4px}
+.lead{color:var(--sub);margin:0 0 20px}
+h2.part{font-size:1.2rem;margin:36px 0 4px}
+.partsub{color:var(--sub);margin:0 0 10px;font-size:.95rem}
+section{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:12px;padding:16px 18px;margin:12px 0}
+section h3{font-size:1.05rem;margin:0 0 6px;color:var(--c)}
+section p{margin:6px 0}
+.prompt{position:relative;background:var(--code);border-radius:10px;padding:14px 70px 14px 14px;margin:10px 0 4px;white-space:pre-wrap;font:14px/1.6 ui-monospace,Consolas,monospace}
+.prompt button{position:absolute;top:8px;right:8px;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:3px 9px;cursor:pointer}
+.pattern{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px}
+@media (max-width:560px){.pattern{grid-template-columns:1fr 1fr}}
+.pattern div{background:var(--code);border-radius:10px;padding:10px;font-size:.92rem}
+.pattern b{display:block;color:var(--hot)}
+dl.four{margin:8px 0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.95rem}
+dl.four dt{font-weight:700;color:var(--c);white-space:nowrap}
+dl.four dd{margin:0}
+.open{display:inline-block;margin:6px 6px 0 0;padding:6px 12px;border-radius:8px;border:1px solid var(--c);color:var(--c);text-decoration:none;font-weight:700;font-size:.92rem}
+.steps{margin:8px 0;padding-left:22px}
+.steps li{margin:4px 0}
+figure{margin:10px 0}
+figure img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;display:block}
+figcaption{font-size:.86rem;color:var(--sub);margin-top:4px}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+@media (max-width:560px){.pc{grid-template-columns:1fr}}
+.pc div{background:var(--code);border-radius:10px;padding:10px 12px;font-size:.93rem}
+.pc ul{margin:4px 0;padding-left:18px}
+.small{font-size:.9rem;color:var(--sub)}
+.note{border-left-color:var(--warn)}
+.note h3{color:var(--warn)}
+ul{margin:6px 0;padding-left:20px}
+.foot{color:var(--sub);font-size:.82rem;margin-top:28px}
+</style>
+</head>
+<body>
+<main>
+<h1>생성형 AI로 수업 자료 만들기</h1>
+<p class="lead">[수학01] 연수 자료 모음 · 2026. 10. 14.</p>
+
+<section style="--c:var(--hot)">
+<h3>프롬프트 '기술'보다 일하는 '패턴'</h3>
+<p>1999년에는 알타비스타·야후·라이코스에서 검색 연산자를 알아야 했고, '인터넷 정보 검색사' 자격도 있었습니다. 그 자격이 사라진 건 검색엔진이 사람 말을 알아듣게 됐기 때문입니다. 프롬프트도 같은 길을 가고 있습니다. 대충 넣어도 잘 나오고, 이제는 AI가 되묻기도 합니다.</p>
+<p>그래도 남는 것은 <b>일하는 패턴</b>입니다.</p>
+<div class="pattern">
+<div><b>1. 필요</b>무엇이 필요했나</div>
+<div><b>2. 작업</b>AI와 어떻게 작업했나</div>
+<div><b>3. 결과</b>무엇이 나왔나</div>
+<div><b>4. 수정</b>내가 무엇을 고쳤나</div>
+</div>
+</section>
+
+<section style="--c:var(--hot)">
+<h3>2단계 '작업'의 요령 · 털어놓고 되묻게 하기</h3>
+<p>긴 프롬프트를 잘 쓰려고 애쓰지 마세요. <b>내 상황을 있는 그대로 말하고</b>(휴대폰 음성 입력도 좋아요), 끝에 이 한 줄만 붙이세요.</p>
+<div class="prompt"><button type="button">복사</button>바로 만들지 말고, 더 좋은 결과를 위해 나에게 필요한 것을 3개만 먼저 물어봐 줘.</div>
+<p>결과를 받은 뒤 이렇게 말하면 <b>다음에도 쓸 수 있는 내 프롬프트</b>가 남습니다.</p>
+<div class="prompt"><button type="button">복사</button>방금 대화 내용을 바탕으로, 다음에 비슷한 걸 만들 때 그대로 붙여 넣을 수 있는 프롬프트를 정리해 줘. 바뀌는 부분은 [ ]로 표시해 줘.</div>
+</section>
+
+<h2 class="part">① 대화로 만든다</h2>
+<p class="partsub">대화창 하나로 수업 화면과 활동을 만듭니다. 아래는 이 방식으로 만든 결과 예시입니다.</p>
+
+<section style="--c:var(--c1)">
+<h3>예시 · 질문으로 시작하는 도입 화면</h3>
+<dl class="four">
+<dt>필요</dt><dd>극한을 정의부터 말하지 않고 "왜 미적분은 극한부터 시작할까?"라는 질문으로 시작하고 싶었다.</dd>
+<dt>작업</dt><dd>수업 흐름과 학생이 막히는 지점을 털어놓고, 한 화면에 질문 하나씩 넘기는 HTML로 요청했다.</dd>
+<dt>결과</dt><dd>PPT 대신 쓰는 웹 슬라이드</dd>
+<dt>수정</dt><dd>설명 말투를 학생 눈높이에 맞게 다시 다듬었다.</dd>
+</dl>
+<a class="open" href="https://ichoongs.github.io/calculus2026/calculus_start.html">결과 보기</a>
+<a class="open" href="https://ichoongs.github.io/calculus2026/continuity.html">비슷한 예: 연속함수의 성질</a>
+</section>
+
+<section style="--c:var(--c1)">
+<h3>예시 · 정의에서 판정까지, 극대·극소 탐구 도구</h3>
+<dl class="four">
+<dt>필요</dt><dd>극대·극소 정의의 "<b>어떤</b> 열린구간에서 f(x) ≤ f(a)"를 학생들이 말로만 외우고, 뾰족한 점·불연속·상수함수에서는 판단을 못 했다. f′(a) = 0이면 무조건 극값이라고 여기기도 했다.</dd>
+<dt>작업</dt><dd>학습지에 실린 그림과 반례 함수(y = x³, y = |x|, 구멍 난 봉우리)를 그대로 주고, 점 주변을 돋보기로 확대해 조건을 확인하는 도구로 요청했다.</dd>
+<dt>결과</dt><dd>4단계 탐구실. ⓪ 돋보기: 점을 끌고 δ를 줄이며 정의 확인, 판정 퀴즈 → ① 부호 보기: 접선 색이 바뀌는 곳 찾기 → ② f′ 움직이기: f′의 근을 끌어 조건에 맞는 함수 만들기('만들 수 없다'도 판단) → ③ 조건 맞추기: 계수 a, b, c 구하기. 틀리면 1단계 그래프로 돌아가 확인한다.</dd>
+<dt>수정</dt><dd>처음엔 '돋보기' 하나였는데, 정의 확인에서 끝나 버려 극값 판정까지 이어지는 탐구 도구로 합쳤다. 미션은 교과서 90쪽 예제·문제에 맞췄다.</dd>
+</dl>
+<a class="open" href="https://ichoongs.github.io/calculus2026/extrema_lab.html">결과 보기: 극대·극소 탐구실</a>
+<p class="small">휴대폰에서도 손가락으로 점과 근을 끌 수 있습니다. 위쪽 단계 버튼으로 0~3단계를 오갑니다.</p>
+</section>
+
+<section style="--c:var(--c1)">
+<h3>📱 직접 만들어 보기</h3>
+<p>둘 중 하나를 골라 휴대폰의 Claude·ChatGPT·Gemini 앱에서 해 보세요. 원본을 먼저 열어 보고, 내 단원으로 바꿔 털어놓으면 됩니다. 끝에 '되묻기 한 줄'을 붙이는 것도 잊지 마세요.</p>
+<p><b>A. 실생활 맥락으로 만나는 개념</b> <a class="open" href="https://ichoongs.github.io/calculus2026/product_rule.html">원본: 매출로 만나는 곱의 미분법</a></p>
+<div class="prompt"><button type="button">복사</button>미적분 곱의 미분법을 가르치는데, 학생들이 (fg)′ = f′g′라고 착각해. 매출 = 가격 × 판매량처럼 실생활 상황에서 가격과 판매량이 동시에 변할 때 매출이 어떻게 변하는지 직접 조작해 보면서, 왜 두 항이 더해지는지 깨닫게 하는 활동을 HTML 하나로 만들고 싶어. 휴대폰에서도 잘 보여야 해.</div>
+<p class="small">바꾸기 예: 확률(경품 뽑기), 지수함수(조회수, 세균 증식), 수열(저축, 대출 상환)</p>
+<p style="margin-top:14px"><b>B. 두 함수의 곱, 연속일까 불연속일까</b> <a class="open" href="https://ichoongs.github.io/calculus2026/continuity.html">원본: 연속함수의 성질 (3번째 화면)</a></p>
+<div class="prompt"><button type="button">복사</button>미적분 연속함수의 성질 수업이야. 학생들이 "연속 × 불연속은 불연속", "불연속 × 불연속은 불연속"이라고 착각해. 실제로는 정해지지 않잖아(f = 0이면 fg = 0, 부호함수를 제곱하면 1). 두 함수를 고르면 각각의 그래프와 곱의 그래프가 함께 그려지고, 학생이 먼저 연속/불연속을 예측한 뒤 확인하는 HTML 활동을 만들고 싶어. 휴대폰에서도 잘 보여야 해.</div>
+<p class="small">AI가 만든 예시 함수가 정말 연속·불연속인지 꼭 직접 확인하세요. 이게 4단계 '수정'입니다.</p>
+</section>
+
+<h2 class="part">② 파일을 주고 맡긴다</h2>
+<p class="partsub">대화가 길어지면 결과가 흐트러지고, 새 대화를 열 때마다 설명을 다시 해야 합니다. 그래서 <b>규칙을 파일로 만들어 두고</b> 작업할 때마다 그 파일을 읽힙니다.</p>
+
+<section style="--c:var(--c2)">
+<h3>예시 · 매 차시 학습지와 수업안</h3>
+<dl class="four">
+<dt>필요</dt><dd>차시마다 학습지를 만드는데, 학급 구성과 수업 방식을 매번 다시 설명해야 했다.</dd>
+<dt>작업</dt><dd>학급 구성·수업 철학·학습지 형식을 '기준 파일'로 정리하고, 차시마다 "○○ 단원 2차시로, 정의는 천천히" 한 줄로 요청했다.</dd>
+<dt>결과</dt><dd>한글·워드 학습지 초안과 수업안</dd>
+<dt>수정</dt><dd>초안을 그대로 쓰지 않고 지면은 직접 다시 짰다. 수업 후 "분량이 너무 많다"는 기록을 기준 파일에 넣었더니 다음 초안부터 분량이 줄었다.</dd>
+</dl>
+<figure><img src="cmp_worksheet.jpg" alt="AI 초안 학습지와 실제 수업에 쓴 학습지 비교" loading="lazy"><figcaption>왼쪽 AI 초안, 오른쪽 실제 수업본. AI는 백지에서 시작하지 않게 해 주는 파트너입니다.</figcaption></figure>
+<div class="prompt"><button type="button">복사</button>내 수업용 '수업 설계 지침' 파일을 같이 만들고 싶어.
+나에게 한 번에 하나씩 질문해서 아래 내용을 채운 뒤, 문서로 정리해 줘.
+1. 과목, 학년, 학급 구성(성취 수준 분포)
+2. 내 수업 철학 한두 문장
+3. 수업 방식(판서, 태블릿, 활동지 등)
+4. 학습지 형식(쪽수, 단 구성, 빈칸 방식, 문제 처리)
+5. AI가 절대 하지 말아야 할 것</div>
+</section>
+
+<section style="--c:var(--c2)">
+<h3>예시 · 교과세특 (md 파일로 쓰는 방법)</h3>
+<dl class="four">
+<dt>필요</dt><dd>한 반 27명의 세특을 같은 기준으로, 근거에 맞게, 나이스 바이트까지 맞춰 써야 했다.</dd>
+<dt>작업</dt><dd>① 리로스쿨에서 받은 반 전체 수행평가 파일을 <b>학생별 근거 파일로 나누고</b> ② 작성 규칙·어휘·점검표를 md 파일로 두고 ③ 학생별 파일에 있는 내용만으로 쓰게 했다.</dd>
+<dt>결과</dt><dd>세특 + 바이트 표시 + 근거 대조표(부풀린 문장 ⚠️ 표시)</dd>
+<dt>수정</dt><dd>17번쯤 쓰다가 "이 표현은 쓰면 안 되겠다"를 깨달았을 때, <b>1~16번에서 그 표현을 한 번에 찾아 고쳤다.</b></dd>
+</dl>
+<div class="pc">
+<div><b>좋았던 점</b><ul>
+<li>대화가 바뀌어도 같은 기준</li>
+<li>일괄 수정 가능</li>
+<li>나이스 엑셀 양식에 바로 입력 → 업로드</li>
+<li>바이트가 나이스와 1~3byte 차이로 거의 일치</li>
+</ul></div>
+<div><b>주의할 점</b><ul>
+<li>학생 자료를 AI에 올림 → 실명 대신 번호·가명, 학교 지침 확인</li>
+<li>같은 규칙이라 문장이 비슷해짐 → 교사 관찰 메모가 핵심</li>
+<li>결과가 깔끔해도 교사가 모두 읽어야 함</li>
+<li>처음 세팅이 번거롭고, 폴더 작업은 유료 기능</li>
+</ul></div>
+</div>
+<p><b>채팅만 쓴다면:</b> Claude·ChatGPT의 '프로젝트', Gemini의 'Gem'에 규칙 파일을 한 번 올려 두세요. 그 안에서 대화할 때마다 규칙을 따릅니다.</p>
+</section>
+
+<section style="--c:var(--c2)">
+<h3>📱 세특 미니 키트 체험</h3>
+<p>가상 학생 6명의 수열 탐구 보고서와 축약 규칙 파일입니다. 실제 학생 정보는 없습니다. 위 세특 예시의 <b>작업 순서 그대로</b> 4단계로 해 봅니다.</p>
+<a class="open" href="가상학생_수열탐구보고서.xlsx" download>① 가상학생_수열탐구보고서.xlsx</a>
+<a class="open" href="세특규칙.md" download>② 세특규칙.md</a>
+<a class="open" href="세특규칙.txt" download>(md가 안 붙으면 .txt)</a>
+<ol class="steps">
+<li><b>학생별 근거 파일로 나누기.</b> 엑셀 파일만 먼저 첨부하고 아래처럼 말합니다. 리로스쿨에서 받은 반 전체 파일을 나누는 것과 같은 작업입니다.</li>
+</ol>
+<div class="prompt"><button type="button">복사</button>이 엑셀은 한 반의 수행평가 응답이야. 학생 한 명당 md 파일 하나로 나눠 줘.
+파일 이름은 '번호_이름_자료.md'로 하고, 안에는 진로와 문항별 응답을 제목을 붙여 정리해 줘. 빈 응답은 '(미작성)'으로 표시해 줘.</div>
+<ol class="steps" start="2">
+<li><b>규칙대로 쓰기.</b> 세특규칙 파일을 첨부하고 이어서 말합니다.</li>
+</ol>
+<div class="prompt"><button type="button">복사</button>세특규칙 파일을 먼저 읽고, 방금 만든 학생별 파일 중 1~3번 학생의 세특을 그 규칙대로 써 줘. 각 세특 아래에 바이트와 근거 대조를 표시해 줘.</div>
+<ol class="steps" start="3">
+<li><b>한 번에 고치기.</b> 결과를 읽고 마음에 안 드는 표현을 하나 찾아, 쓴 것 전체에서 고치게 합니다.</li>
+</ol>
+<div class="prompt"><button type="button">복사</button>지금까지 쓴 세특에서 '알게 됨', '깨달음'처럼 무엇을 했는지 드러나지 않는 표현을 모두 찾아서, 학생 자료에 있는 구체적인 행동으로 고쳐 줘. 고친 부분만 보여 줘.</div>
+<ol class="steps" start="4">
+<li><b>검토하기.</b> ⚠️ 표시된 문장이 정말 부풀려졌는지 학생별 파일과 비교해 봅니다. 4번 학생(근거가 약한 경우)도 써 보세요.</li>
+</ol>
+<p class="small">휴대폰 AI의 바이트 계산은 대략적입니다. 폴더 방식에서는 계산 스크립트로 정확히 셉니다.</p>
+</section>
+
+<h2 class="part">③ 우리 학교에 맞는 도구를 만든다</h2>
+<p class="partsub">다른 학교의 프로그램은 좋아 보여도 우리 학교 방식과 맞지 않는 경우가 많습니다. 남의 것을 고쳐 쓰기보다, 우리 방식을 털어놓아 내 것을 만듭니다.</p>
+
+<section style="--c:var(--c3)">
+<h3>예시 · 수행평가·세특 활동 탐색 도구</h3>
+<dl class="four">
+<dt>필요</dt><dd>학생들이 수행평가·세특 활동 아이디어를 찾기 어려워했다.</dd>
+<dt>작업</dt><dd>계열별 활동 자료를 주고, 학생이 개인정보 없이 검색·비교할 수 있는 웹 도구로 요청했다.</dd>
+<dt>결과</dt><dd>활동 403개를 계열·과목·방식으로 검색·비교하는 페이지</dd>
+</dl>
+<a class="open" href="https://ichoongs.github.io/activity-explorer/">결과 보기</a>
+<p style="margin-top:10px">이 밖에 자습 출결·좌석 배치, 보충수업·초과근무 시간 계산처럼 <b>우리 학교의 실제 절차</b>를 털어놓아 만든 도구들이 있습니다. 여러 사람이 쓰는 앱은 Claude Code·Codex로 만듭니다.</p>
+<div class="prompt"><button type="button">복사</button>우리 학교에서는 [업무]를 이렇게 해: [실제 절차를 있는 그대로].
+지금 불편한 점은 [불편한 점]이야.
+이걸 해결하는 간단한 웹 페이지를 만들고 싶어. 바로 만들지 말고, 필요한 것을 3개만 먼저 물어봐 줘.</div>
+<p class="small">시작하는 법은 <a href="env.html">준비물 안내</a>를 보세요. 지금 보고 계신 이 페이지도 같은 방식으로 만들어 링크로 나눠 드린 것입니다.</p>
+</section>
+
+<section class="note">
+<h3>꼭 지킬 세 가지</h3>
+<ul>
+<li><b>개인정보:</b> 학생 실명·성적은 AI에 넣지 않고, 공개된 곳에는 절대 올리지 않습니다.</li>
+<li><b>검토 책임:</b> AI 결과는 초안입니다. 4단계 '수정'은 교사의 몫입니다.</li>
+<li><b>대화를 남기기:</b> 좋은 대화가 끝나면 내 프롬프트, 더 나아가 규칙 파일로 정리해 둡니다.</li>
+</ul>
+</section>
+
+<p class="foot">앱 이름·요금·기능은 자주 바뀝니다. 2026년 10월 기준으로 작성했습니다.</p>
+</main>
+<script>
+document.querySelectorAll('.prompt button').forEach(function(b){
+  b.addEventListener('click',function(){
+    var t=b.parentElement.innerText.replace(/^(복사|복사됨)\s*/,'');
+    if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){b.textContent='복사됨';setTimeout(function(){b.textContent='복사'},1500)},function(){});}
+  });
+});
+</script>
+</body>
+</html>
