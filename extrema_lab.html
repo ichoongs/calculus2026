@@ -236,8 +236,9 @@ canvas{width:100%;display:block;touch-action:none;border-radius:8px;background:v
       <button class="chip" data-deg="3" aria-pressed="true">삼차함수 (<span class="m">f′</span>은 이차)</button>
       <button class="chip" data-deg="4" aria-pressed="false">사차함수 (<span class="m">f′</span>은 삼차)</button>
       <button class="chip" id="flip">위아래 뒤집기</button>
+      <button class="chip" id="showF" aria-pressed="false"><span class="m">f</span> 그래프 보기</button>
     </div>
-    <p class="prog">아래 부호 띠의 보라 손잡이(근)를 좌우로 천천히 끌어 보세요. 두 근을 가까이 가져가면 딱 겹치면서 <span class="m">x</span>축에 접해요.</p>
+    <p class="prog">먼저 <span class="m">f</span>의 그래프 없이 아래 부호 띠만 보고 극대·극소를 판정해요. 그래프는 판정한 뒤에 확인용으로 열어요. 보라 손잡이(근)를 좌우로 천천히 끌어 보세요. 두 근을 가까이 가져가면 딱 겹치면서 <span class="m">x</span>축에 접해요.</p>
     <div class="readout" id="read2"></div>
     <div class="mission">
       <h2 id="m2title"></h2>
@@ -533,7 +534,7 @@ const signColor=s=>s>0?css('--up'):s<0?css('--down'):css('--flat');
 // ───────── 상태 ─────────
 const X0=-3.2,X1=3.2;
 const st={stage:1,fn:PRESETS[0].fn,presetKey:'p1',px:-2,trail:new Map(),found:[],ret:null,
-  s2:{deg:3,k:1,roots:[-1,1.5],mi:0,wrong:0},s3:{mi:0,wrong:0}};
+  s2:{deg:3,k:1,roots:[-1,1.5],mi:0,wrong:0,showF:false},s3:{mi:0,wrong:0}};
 const $=id=>document.getElementById(id);
 const cvF=$('cvF'),cvD=$('cvD');
 
@@ -560,9 +561,13 @@ function draw(){
   // f
   let {ctx,w,h}=setupCanvas(cvF);ctx.clearRect(0,0,w,h);
   let [y0,y1]=easeRange('f',yRange(fn.f,X0,X1,4));const vF=makeView(w,h,X0,X1,y0,y1);grid(ctx,vF);
-  if(st.stage===1){curve(ctx,vF,fn.f,css('--axis'),2);curveSigned(ctx,vF,fn.f,fn.d,4,x=>st.trail.has(Math.round(x*50)))}
+  const hideF=st.stage===2&&!st.s2.showF;
+  if(hideF){ctx.fillStyle=css('--soft');ctx.fillRect(0,0,w,h);ctx.fillStyle=css('--muted');ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='600 15px '+css('--f-body');ctx.fillText('f(x)의 그래프는 가려 두었어요',w/2,h/2-12);
+    ctx.font='400 13px '+css('--f-body');ctx.fillText('아래 f′의 부호 띠만 보고 극대·극소를 먼저 판정해 봐요',w/2,h/2+12);ctx.textBaseline='alphabetic'}
+  else if(st.stage===1){curve(ctx,vF,fn.f,css('--axis'),2);curveSigned(ctx,vF,fn.f,fn.d,4,x=>st.trail.has(Math.round(x*50)))}
   else curveSigned(ctx,vF,fn.f,fn.d,3.2);
-  {for(const e of an.ex){const px=vF.X(e.x),py=vF.Y(e.y);
+  if(!hideF){for(const e of an.ex){const px=vF.X(e.x),py=vF.Y(e.y);
       if(st.stage!==1||st.found.some(f=>Math.abs(f.x-e.x)<0.25&&f.type===e.type)){
         ctx.fillStyle=css('--ink');ctx.font='600 12px '+css('--f-body');ctx.textAlign='center';
         ctx.fillText(e.type==='max'?'극대':'극소',px,e.type==='max'?py-12:py+20);dot(ctx,px,py,4.5,css('--ink'))}}}
@@ -614,7 +619,7 @@ function overlay(fn,an,vF,vD){
   const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
   const bb=box.getBoundingClientRect(),rF=cvF.getBoundingClientRect(),rD=cvD.getBoundingClientRect();
   const oxF=rF.left-bb.left,oyF=rF.top-bb.top,oxD=rD.left-bb.left,oyD=rD.top-bb.top;
-  const items=[];
+  const items=[];if(st.stage===2&&!st.s2.showF)return;
   for(const e of an.ex){if(st.stage===1&&!st.found.some(f=>Math.abs(f.x-e.x)<0.25&&f.type===e.type))continue;
     items.push({x:e.x,y:e.y,c:css(e.type==='max'?'--up':'--down'),lab:`x = ${fmt(e.x)}`,skip:e.type==='min'?26:6})}
   for(const z of an.flat){if(st.stage===1&&!st.flatSeen)continue;items.push({x:z,y:fn.f(z),c:css('--flat'),lab:`x = ${fmt(z)}`})}
@@ -631,7 +636,7 @@ function readouts(fn,an){
   if(st.stage===1){const m=fn.d(st.px);let s,txt;
     if(!isFinite(m)){s='none';txt='접선이 없어요 (뾰족한 점)'}else if(Math.abs(m)<0.04){s='flat';txt='기울기 0'}else if(m>0){s='up';txt='기울기 + → 증가'}else{s='down';txt='기울기 − → 감소'}
     $('read1').innerHTML=`<span>x = <b>${fmt(st.px)}</b></span><span>f′(x) = <b>${isFinite(m)?fmt(m):'없음'}</b></span><span class="pill ${s}">${txt}</span>`}
-  if(st.stage===2){const rs=[...st.s2.roots].sort((a,b)=>a-b);$('read2').innerHTML=`<span>f′(x) = 0 인 x: <b>${rs.filter((r,i)=>i===0||r!==rs[i-1]).map(r=>fmt(r)+(rs.filter(q=>q===r).length>1?' (중근)':'')).join(', ')}</b></span>`+extPills(an)+(an.flat.length?`<span class="pill flat">f′=0 이지만 극값 아님: x = ${an.flat.map(fmt).join(', ')}</span>`:'')}
+  if(st.stage===2){const rs=[...st.s2.roots].sort((a,b)=>a-b);$('read2').innerHTML=`<span>f′(x) = 0 인 x: <b>${rs.filter((r,i)=>i===0||r!==rs[i-1]).map(r=>fmt(r)+(rs.filter(q=>q===r).length>1?' (중근)':'')).join(', ')}</b></span>`+(st.s2.showF?extPills(an)+(an.flat.length?`<span class="pill flat">f′=0 이지만 극값 아님: x = ${an.flat.map(fmt).join(', ')}</span>`:''):'')}
   if(st.stage===3){$('read3').innerHTML=extPills(an)}
 }
 
@@ -678,15 +683,17 @@ const M2=[
 function setDeg(d){st.s2.deg=d;st.s2.roots=d===3?[-1,1.5]:[-2,0,1.5];
   document.querySelectorAll('#deg2 [data-deg]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.deg===d)))}
 function loadM2(){document.body.classList.remove('mini');const m=M2[st.s2.mi];if(st.s2.deg!==m.deg)setDeg(m.deg);
-  $('m2title').textContent=m.title;$('m2text').textContent=m.text;$('b2cant').hidden=!m.cant;$('fb2').textContent='';$('dem2').hidden=true;st.s2.wrong=0;draw()}
+  $('m2title').textContent=m.title;$('m2text').textContent=m.text;$('b2cant').hidden=!m.cant;$('fb2').textContent='';$('dem2').hidden=true;st.s2.wrong=0;setShowF(false)}
 document.querySelectorAll('#deg2 [data-deg]').forEach(b=>b.onclick=()=>{const d=+b.dataset.deg;if(M2[st.s2.mi].deg===d)return;st.s2.k=1;setDeg(d);st.s2.mi=M2.findIndex(m=>m.deg===d);loadM2()});
 $('flip').onclick=()=>{st.s2.k*=-1;draw()};
+function setShowF(v){st.s2.showF=v;$('showF').setAttribute('aria-pressed',String(v));$('showF').innerHTML=(v?'<span class="m">f</span> 그래프 가리기':'<span class="m">f</span> 그래프 보기');draw()}
+$('showF').onclick=()=>setShowF(!st.s2.showF);
 function wrong2(msg){st.s2.wrong++;$('fb2').className='fb no';$('fb2').textContent=msg;if(st.s2.wrong>=2)$('dem2').hidden=false}
 $('b2check').onclick=()=>{const m=M2[st.s2.mi],an=analyze(currentFn(),X0,X1);
   if(m.cant){wrong2(m.no(an));return}
-  if(m.check(an)){$('fb2').className='fb ok';$('fb2').textContent=m.ok(an);$('dem2').hidden=true}
+  if(m.check(an)){$('fb2').className='fb ok';$('fb2').textContent=m.ok(an)+' 위에 f의 그래프를 열었어요. 판정과 맞는지 확인해 봐요.';$('dem2').hidden=true;setShowF(true)}
   else wrong2(m.no(an))};
-$('b2cant').onclick=()=>{$('fb2').className='fb ok';$('fb2').textContent='맞아요. f′는 삼차함수라 왼쪽 끝과 오른쪽 끝의 부호가 반대예요. 그래서 어딘가에서 반드시 부호가 바뀌고, 사차함수는 극값을 꼭 가져요. 건우의 말은 참!'};
+$('b2cant').onclick=()=>{$('fb2').className='fb ok';$('fb2').textContent='맞아요. f′는 삼차함수라 왼쪽 끝과 오른쪽 끝의 부호가 반대예요. 그래서 어딘가에서 반드시 부호가 바뀌고, 사차함수는 극값을 꼭 가져요. 건우의 말은 참!';setShowF(true)};
 $('b2next').onclick=()=>{st.s2.mi=(st.s2.mi+1)%M2.length;loadM2()};
 
 // ───────── 3단계 ─────────
