@@ -392,7 +392,8 @@ function render(){
   z.forEach(q=>{const x=X(q.x),y1=Yf(ev(P,q.x));ctx.strokeStyle=q.type==='max'?c.up:q.type==='min'?c.down:c.flat;
     ctx.beginPath();ctx.moveTo(x,Math.max(0,Math.min(fH,y1+(q.type==='min'?8:-0)+ (q.type==='max'?6:0))));ctx.lineTo(x,Yd(0));ctx.stroke();});
   ctx.setLineDash([]);
-  curveSigned(p,pp,Yd,dTop,bandTop,2.6);
+  // g′: 증감이 아니라 '부호'로 색칠 — x축 위(+)는 주황, 아래(−)는 파랑 (부호 띠와 같은 색)
+  curveSigned(p,p,Yd,dTop,bandTop,2.8);
   curveSigned(P,p,Yf,0,fH,3.4);
   // 부호 띠
   const bxs=[XMIN-1,...z.filter(q=>q.type!=='flat').map(q=>q.x),XMAX+1];
