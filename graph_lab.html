@@ -281,10 +281,11 @@ function renderFormula(){
   const items=[];
   const live=[...st.roots].sort((a,b)=>a-b);
   const grouped=[];for(const r of live){const g=grouped[grouped.length-1];if(g&&Math.abs(g.x-r)<EPS)g.k++;else grouped.push({x:r,k:1});}
+  let dblIn=false;if(st.dbl&&Math.abs(st.dbl.d)<=EPS){const g=grouped.find(g=>Math.abs(g.x-st.dbl.m)<EPS);if(g){g.k+=2;dblIn=true;}}
   grouped.forEach(g=>items.push({x:g.x,h:powF(g.x,g.k,'rt')}));
   if(st.dbl){const{m,d}=st.dbl;
     if(d>EPS){const q=Math.sqrt(d);if(frac(q,48))items.push({x:m-q,h:powF(m-q,1,'rt')},{x:m+q,h:powF(m+q,1,'rt')});else{const L=lin(m,'rt');const sq=L.bare?'<i>x</i><sup>2</sup>':`(${L.h})<sup>2</sup>`;items.push({x:m,h:`(${sq} − <b class="rt">${num(d)}</b>)`});}}
-    else if(d>=-EPS)items.push({x:m,h:powF(m,2,'rt')});
+    else if(d>=-EPS){if(!dblIn)items.push({x:m,h:powF(m,2,'rt')});}
     else{const L=lin(m,'rt');const sq=L.bare?'<i>x</i><sup>2</sup>':`(${L.h})<sup>2</sup>`;items.push({x:m,h:`{${sq} + <b class="rt">${num(-d)}</b>}`});}
   }
   const key=i=>Math.abs(i.x)<EPS&&!i.h.startsWith('{')?-1e9:i.x;items.sort((a,b)=>key(a)-key(b));
@@ -489,7 +490,7 @@ function render(){
   const R=analyzeF();
   if(st.Cknown)R.roots.forEach(r=>{const x=X(r.x);if(x<-10||x>W+10)return;const big=r.mult>1;diamond(x,Yf(0),big?8:6,big?c.cst:c.ink,big?c.cst:null);
     const atCrit=z.some(q=>Math.abs(q.x-r.x)<1e-6);
-    if(big&&!atCrit)label(r.mult===2?'중근':'삼중근',x,Yf(0)+22,c.cst,c.surface,'center',11.5,700);});
+    if(big&&!atCrit)label(['','','중근','삼중근','사중근'][r.mult]||'',x,Yf(0)+22,c.cst,c.surface,'center',11.5,700);});
   // 실근 없는 이차 f′: 꼭짓점(기울기가 가장 작은 곳)과 g 위의 점을 회색 점선으로 잇기 — 극값이 아니므로 색·모양을 달리함
   if(st.dbl&&st.dbl.d<-EPS&&st.roots.length===0){const m=st.dbl.m,x=X(m),yg=Yf(ev(P,m)),yv=Math.max(dTop+14,Math.min(bandTop-14,Yd(vtxY())));
     ctx.setLineDash([2,4]);ctx.lineWidth=1.4;ctx.strokeStyle=c.muted;ctx.beginPath();ctx.moveTo(x,Math.max(0,Math.min(fH,yg)));ctx.lineTo(x,yv);ctx.stroke();ctx.setLineDash([]);
@@ -497,7 +498,7 @@ function render(){
   // 극대·극소: 채운 점 (수학적 점)
   z.forEach(q=>{const v=ev(P,q.x),x=X(q.x),y=Yf(v);if(y<-10||y>fH+10)return;
     const onAxis=st.Cknown&&Math.abs(v)<1e-8*Math.max(1,Math.abs(st.C));
-    const tag=onAxis?(q.type==='flat'?' · 삼중근':' · 중근'):'';
+    const MN=['','','중근','삼중근','사중근'];const tag=onAxis?' · '+(MN[q.mult+1]||''):'';
     if(q.type==='flat'){dot(x,y,5,c.flat);label('극값 아님'+tag,x,Math.max(12,y-17),onAxis?c.cst:c.flat,c.surface,'center',12,700);return;}
     dot(x,y,5,c.ink);const isMax=q.type==='max';let ly=Math.max(12,Math.min(fH-12,y+(isMax?-17:19)));
     if(Math.abs(ly-Yf(0))<15)ly=Math.max(12,Math.min(fH-12,y+(isMax?19:-17)));   // x축·눈금과 겹치면 반대쪽으로
@@ -517,7 +518,7 @@ function render(){
     diamond(x,y,9,c.handle,c.handle);
     ctx.fillStyle=c.handle;ctx.font=`700 11px ${UI}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('▲',x,y-17);ctx.fillText('▼',x,y+17);
     if(!st.win)grip(x,by,30,22,c.handle,false);
-    const t=d>EPS?'놓으면 두 근':(d>=-EPS?'중근 · 위아래로 떼어 보기':'실근 없음');
+    const tri=st.roots.some(r=>Math.abs(r-m)<EPS);const t=d>EPS?'놓으면 두 근':(d>=-EPS?(tri?'삼중근':'중근')+' · 위아래로 떼어 보기':'실근 없음');
     if(!(d>=-EPS&&d<=EPS))label(t,x,Math.max(dTop+12,Math.min(bandTop-30,y+(y<hy?-30:30))),c.handle,c.panel2,'center',11.5,700);
     else label(t,x,hy-30,c.handle,c.panel2,'center',11.5,700);}
   if(st.win)drawWinGrips();
@@ -605,15 +606,16 @@ cv.addEventListener('pointermove',e=>{
     const others=st.roots.filter((_,j)=>j!==drag.i);let merged=false;
     for(const o of others){if(Math.abs(v-o)*ppx()<12){v=o;merged=true;break;}}
     if(!merged){v=clampR(Math.round(v*2)/2);merged=others.includes(v);}
-    if(st.dbl&&Math.abs(st.dbl.d)<=EPS&&Math.abs(v-st.dbl.m)*ppx()<16)return;
+    // 중근 위로 겹치면 삼중근 (자석)
+    if(st.dbl&&Math.abs(st.dbl.d)<=EPS&&Math.abs(v-st.dbl.m)*ppx()<16){v=st.dbl.m;merged=true;}
     if(merged&&others.filter(o=>o===v).length>=2)return;
     if(merged&&!st.merged){buzz();}st.merged=merged;
     if(st.roots[drag.i]!==v){st.roots[drag.i]=v;st.Cknown=false;touched();}
   }else{
-    const m=clampR(Math.round(iX(p.x)*2)/2);
+    let m=clampR(Math.round(iX(p.x)*2)/2);
     let d=st.dbl.d;
     if(drag.type==='vtx'){const yw=iYd(p.y);d=-yw/(st.s*st.K*leff(m));if(Math.abs(yw)*ppuD()<14)d=0;}
-    if(Math.abs(d)<=EPS&&st.roots.some(r=>Math.abs(r-m)*ppx()<16))return;
+    if(Math.abs(d)<=EPS){const r=st.roots.find(r=>Math.abs(r-m)*ppx()<16);if(r!==undefined)m=r;}   // 단일근 위에서 접으면 삼중근
     if(m!==st.dbl.m||d!==st.dbl.d){st.Cknown=false;touched();}
     st.dbl={m,d};
   }
