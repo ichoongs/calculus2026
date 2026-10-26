@@ -109,6 +109,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 .helpsheet i{font-family:var(--font-math)}
 .hclose{display:block;margin:10px 0 0 auto;font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--ink);background:var(--grid);border:0;border-radius:8px;padding:6px 14px;cursor:pointer}
 .unknown{font-family:var(--font-ui);font-size:13px;color:var(--cst);font-weight:600}
+/* 구간 창 (최대·최소) */
+.row.win .lab{font-family:var(--font-ui);font-style:normal;font-size:12.5px;font-weight:700;color:var(--handle)}
+.row.win{align-items:flex-start}.row.win .lab{padding-top:3px}.row.win .ex{font-size:15.5px;white-space:normal;line-height:1.9}.wres{display:block;line-height:1.5}
+.wiv{font-weight:600;color:var(--handle);margin-right:6px}
+.cd{display:inline-block;border:1px solid var(--line);border-radius:7px;padding:0 6px;margin-right:4px;line-height:1.5}
+.cd.cmx,.cd.cmn{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.cd.cop{border-style:dashed;color:var(--muted)}
+.wres{font-family:var(--font-ui);font-size:13px;font-weight:700;margin-left:4px}
+.wres .no{color:var(--muted)}
+#bWin[aria-pressed="true"]{background:var(--handle);border-color:var(--handle);color:var(--handle-ink)}
+.bar .seg button{min-height:40px;font-family:var(--font-math);font-size:15px}
 </style>
 
 <div class="app">
@@ -122,7 +133,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
     <span class="src" id="src"></span>
     <div class="row"><span class="lab" id="labFp">f′(x) =</span><span class="ex" id="fpLine"></span></div>
     <div class="row main"><span class="lab" id="labF">f(x) =</span><span class="ex" id="fLine"></span></div>
-    <div class="row roots"><span class="lab">x축</span><span class="ex" id="rootLine"></span></div>
+    <div class="row roots" id="rootRow"><span class="lab">x축</span><span class="ex" id="rootLine"></span></div>
+    <div class="row win" id="winRow" hidden><span class="lab">구간</span><span class="ex" id="winLine"></span></div>
   </section>
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="위: y=f(x) 그래프, 아래: y=f′(x) 그래프와 부호 띠"></canvas>
@@ -133,20 +145,23 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
       <li><b class="hc">청록 손잡이</b> 오른쪽 손잡이나 위쪽 그래프를 위아래로 끌면 높이(상수항)가 정해져요.</li>
       <li><b>교과서 칩</b> 문제의 <i>f</i>(<i>x</i>)를 내 함수 <i>g</i>(<i>x</i>)로 직접 만들어 봐요. 막히면 '정답 보기'.</li>
       <li><b>최고차항 ±</b> 그래프를 위아래로 뒤집어요. <b>직접 만들기</b>는 문제 없이 자유롭게.</li>
+      <li><b class="hp">구간 창</b> 최댓값·최솟값 찾기. 아래 띠의 양 끝 손잡이로 <i>a</i>, <i>b</i>를, 가운데를 끌면 창 전체를 옮겨요. 후보는 창 안의 극값과 양 끝값. <b>[ ]</b>·<b>( )</b>로 닫힌/열린구간을 바꿔요.</li>
     </ul>
     <button class="hclose" id="bHelpClose">닫기</button>
   </div>
   <nav class="bar">
     <button id="bSign">최고차항 +</button>
     <span class="grow"></span>
+    <div class="seg" id="segOpen" hidden><button id="bClosed" aria-pressed="true">[ ]</button><button id="bOpenIv" aria-pressed="false">( )</button></div>
     <button id="bAns" hidden>정답 보기</button>
     <button id="bFree">직접 만들기</button>
+    <button id="bWin" aria-pressed="false">구간 창</button>
   </nav>
 </div>
 
 <script>
 (function(){
-const XMIN=-4, XMAX=5;
+let XMIN=-4, XMAX=5;const XR0=[-4,5];function setXR(r){XMIN=r[0];XMAX=r[1];}
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d'), stage=document.getElementById('stage');
 const $=id=>document.getElementById(id);
 
@@ -170,20 +185,34 @@ const LIB={
     {id:'p22',name:'문제2(2)',page:'93쪽',K:1,s:-1,roots:[-2,0,1],dbl:null,C:0}, // −¼x⁴−⅓x³+x²
     {id:'s12',name:'스스로1(2)',page:'96쪽',K:8,s:-1,roots:[-1,0,1],dbl:null,C:3} // −2x⁴+4x²+3
   ]};
+// 최대·최소 (구간 창): iv = 구간, open = 열린구간, xr = 화면 x 범위
+const WLIB={
+  cubic:[
+    {id:'w_e3',name:'예제3',page:'94쪽',K:1,s:1,roots:[0,2],dbl:null,C:1,iv:[0,3]},          // ⅓x³−x²+1
+    {id:'w_p31',name:'문제3(1)',page:'94쪽',K:3,s:-1,roots:[-2,0],dbl:null,C:-1,iv:[-4,0]},  // −x³−3x²−1
+    {id:'w_box',name:'예제4 상자',page:'95쪽',K:12,s:1,roots:[2,6],dbl:null,C:0,iv:[0,6],open:true,xr:[-1,7]}, // 4x³−48x²+144x
+    {id:'w_s21',name:'스스로2(1)',page:'96쪽',K:3,s:1,roots:[1,3],dbl:null,C:-2,iv:[0,5]},   // x³−6x²+9x−2
+    {id:'w_s3',name:'스스로3',page:'96쪽',K:3,s:1,roots:[0,2],dbl:null,C:0,iv:[-2,2]}        // x³−3x²+a
+  ],
+  quartic:[
+    {id:'w_p32',name:'문제3(2)',page:'94쪽',K:4,s:1,roots:[3],dbl:{m:0,d:0},C:2,iv:[0,4]},   // x⁴−4x³+2
+    {id:'w_s22',name:'스스로2(2)',page:'96쪽',K:4,s:1,roots:[-Math.sqrt(3),0,Math.sqrt(3)],dbl:null,C:3,iv:[-2,1]} // x⁴−6x²+3
+  ]};
 const FREE={cubic:{K:3,s:1,roots:[-1,2],dbl:null,C:0},quartic:{K:1,s:1,roots:[-1,1,3],dbl:null,C:0}};
-let st={mode:'cubic'};
-function load(p,book){st.target=null;st.done=false;st.K=p.K;st.s=p.s;st.roots=p.roots.slice();st.dbl=p.dbl?{...p.dbl}:null;st.C=p.C;
+let st={mode:'cubic',win:null};
+function load(p,book){setXR(p.xr||XR0);st.target=null;st.done=false;st.K=p.K;st.s=p.s;st.roots=p.roots.slice();st.dbl=p.dbl?{...p.dbl}:null;st.C=p.C;
   st.Cknown=!!book;st.src=book?{id:p.id,name:`${p.page} ${p.name}`,changed:false}:null;}
 function touched(){if(st.src)st.src.changed=true;}
 // 문제 모드: 교과서 f(x)를 보여 주고, 학생이 f′의 근과 높이를 맞춰서 만들어 봄
 const START={cubic:[-1,3],quartic:[-2,1,3]};
-function loadProblem(p){st.K=p.K;st.s=p.s;st.roots=START[st.mode].slice();st.dbl=null;st.Cknown=false;st.C=0;st.target=p;st.done=false;
+function loadProblem(p){setXR(p.xr||XR0);st.K=p.K;st.s=p.s;st.roots=START[st.mode].slice();st.dbl=null;st.Cknown=false;st.C=0;st.target=p;st.done=false;
   st.src={id:p.id,name:`${p.page} ${p.name}`,changed:false};}
 function targetF0(){const p=st.target;let q=[p.s*p.K];for(const r of p.roots)q=mul(q,[-r,1]);if(p.dbl)q=mul(q,[p.dbl.m*p.dbl.m-p.dbl.d,-2*p.dbl.m,1]);return integ(q,0);}
 function polyHTML(P,C){const n=P.length-1;let out='',first=true;
   for(let i=n;i>=1;i--){const c=P[i];if(Math.abs(c)<1e-7)continue;const a=Math.abs(c);
     out+=(first?(c<0?'−':''):(c<0?' − ':' + '))+(Math.abs(a-1)<EPS?'':num(a))+(i>1?`<i>x</i><sup>${i}</sup>`:'<i>x</i>');first=false;}
   if(Math.abs(C)>EPS)out+=(C<0?' − ':' + ')+num(Math.abs(C));return out;}
+function loadWin(p){load(p,true);st.win={a:p.iv[0],b:p.iv[1],open:!!p.open};}
 loadProblem(LIB.cubic[0]);
 
 const view={Hf:6,Hd:4,needF:6,needD:4,ax:1,Dc:0,needDc:0};
@@ -208,11 +237,14 @@ function vtxY(){const{m,d}=st.dbl;return st.s*st.K*(-d)*leff(m);}
 /* ---------- number formatting ---------- */
 function frac(v,maxDen){for(let q=1;q<=maxDen;q++){const p=Math.round(v*q);if(Math.abs(v-p/q)<1e-7)return[p,q];}return null;}
 function num(a){
+  {const r=surd(a);if(r)return r;}
   const f=frac(a,48);
   if(f){if(f[1]===1)return String(f[0]);return `<span class="fr"><span>${f[0]}</span><span>${f[1]}</span></span>`;}
   return (+a.toFixed(2)).toString();
 }
-function txt(v){const s=v<-1e-12?'−':'';const a=Math.abs(v);const f=frac(a,4);if(f)return s+(f[1]===1?f[0]:f[0]+'/'+f[1]);return s+(+a.toFixed(1));}
+function surd(a){const n=Math.round(a*a);if(n>1&&n<100&&Math.abs(a*a-n)<1e-9&&Math.abs(Math.sqrt(n)-Math.round(Math.sqrt(n)))>1e-9&&!frac(a,48))return '√'+n;return null;}
+const sn=v=>(v<-1e-12?'−':'')+num(Math.abs(v));
+function txt(v){const s=v<-1e-12?'−':'';const a=Math.abs(v);{const r=surd(a);if(r)return s+r;}const f=frac(a,12);if(f)return s+(f[1]===1?f[0]:f[0]+'/'+f[1]);return s+(+a.toFixed(1));}
 function leadHTML(v){if(Math.abs(v-1)<EPS)return'';if(Math.abs(v+1)<EPS)return'−';return(v<0?'−':'')+num(Math.abs(v));}
 function lin(r,cls){
   if(Math.abs(r)<EPS)return{bare:true,h:'<i>x</i>'};
@@ -229,7 +261,7 @@ function renderFormula(){
   const grouped=[];for(const r of live){const g=grouped[grouped.length-1];if(g&&Math.abs(g.x-r)<EPS)g.k++;else grouped.push({x:r,k:1});}
   grouped.forEach(g=>items.push({x:g.x,h:powF(g.x,g.k,'rt')}));
   if(st.dbl){const{m,d}=st.dbl;
-    if(d>EPS){const q=Math.sqrt(d);items.push({x:m-q,h:powF(m-q,1,'rt')},{x:m+q,h:powF(m+q,1,'rt')});}
+    if(d>EPS){const q=Math.sqrt(d);if(frac(q,48))items.push({x:m-q,h:powF(m-q,1,'rt')},{x:m+q,h:powF(m+q,1,'rt')});else{const L=lin(m,'rt');const sq=L.bare?'<i>x</i><sup>2</sup>':`(${L.h})<sup>2</sup>`;items.push({x:m,h:`(${sq} − <b class="rt">${num(d)}</b>)`});}}
     else if(d>=-EPS)items.push({x:m,h:powF(m,2,'rt')});
     else{const L=lin(m,'rt');const sq=L.bare?'<i>x</i><sup>2</sup>':`(${L.h})<sup>2</sup>`;items.push({x:m,h:`{${sq} + <b class="rt">${num(-d)}</b>}`});}
   }
@@ -269,7 +301,18 @@ function renderFormula(){
   }
   $('rootLine').innerHTML=st.Cknown?`<span class="cnt">교점 ${cnt}개</span>${form}`:`<span class="cnt">교점 ?개</span><span class="unknown">높이를 정해야 알 수 있어요</span>`;
   {const nm=st.target?'g':'f';$('labFp').textContent=nm+'′(x) =';$('labF').textContent=nm+'(x) =';}
-  $('probCard').hidden=!st.target;$('bAns').hidden=!st.target||st.done;
+  $('rootRow').hidden=!!st.win;$('winRow').hidden=!st.win;
+  if(st.win){const I=winInfo();const{a,b,open}=st.win;const iv=open?`(${sn(a)}, ${sn(b)})`:`[${sn(a)}, ${sn(b)}]`;
+    if(!I)$('winLine').innerHTML=`<span class="wiv">${iv}</span><span class="unknown">높이를 정해야 알 수 있어요</span>`;
+    else{const has=(L,c)=>L.some(q=>q===c);
+      const cs=I.cands.map(c=>{let cl='cd',t;
+        if(c.end){t=`<i>f</i>(${sn(c.x)}) = ${sn(c.v)}`;if(open)cl+=' cop';}else t=`${c.type==='max'?'극대':'극소'} ${sn(c.v)}`;
+        if(has(I.maxPts,c))cl+=' cmx';else if(has(I.minPts,c))cl+=' cmn';return `<span class="${cl}">${t}</span>`;}).join('');
+      const r=(L,v,w)=>L.length?`${w} ${sn(v)}`:`<span class="no">${w} 없음</span>`;
+      $('winLine').innerHTML=`<span class="wiv">${iv}</span>${cs}<span class="wres">→ ${r(I.maxPts,I.sup,'최대')} · ${r(I.minPts,I.inf,'최소')}</span>`;}}
+  $('probCard').hidden=!st.target;$('bAns').hidden=!st.target||st.done||!!st.win;$('bFree').hidden=!!st.win;
+  $('segOpen').hidden=!st.win;$('bWin').setAttribute('aria-pressed',!!st.win);
+  if(st.win){$('bClosed').setAttribute('aria-pressed',!st.win.open);$('bOpenIv').setAttribute('aria-pressed',st.win.open);}
   if(st.target){$('probLab').textContent=`문제 · ${st.src.name}`;$('probLine').innerHTML='<i>f</i>(<i>x</i>) = '+polyHTML(targetF0(),st.target.C);
     const ps=$('probStat');ps.textContent=st.done?'g = f 완성!':fpOK?'g′ = f′ · 이제 높이':'만드는 중';ps.className='pstat'+(st.done?' done':fpOK?' half':'');}
   const sr=$('src');if(st.target){sr.textContent='g(x)를 f(x)와 같게 만들기';sr.className='src';}
@@ -277,8 +320,9 @@ function renderFormula(){
   renderChips();
 }
 
+function curLib(){return(st.win?WLIB:LIB)[st.mode];}
 function renderChips(){const el=$('chips');
-  el.innerHTML=LIB[st.mode].map(p=>`<button class="chip" data-id="${p.id}" aria-pressed="${!!(st.src&&(st.target||!st.src.changed)&&st.src.id===p.id)}">${p.name}<small>${p.page}</small></button>`).join('');}
+  el.innerHTML=curLib().map(p=>`<button class="chip" data-id="${p.id}" aria-pressed="${!!(st.src&&(st.target||!st.src.changed)&&st.src.id===p.id)}">${p.name}<small>${p.page}</small></button>`).join('');}
 function analyzeF(){
   const P=Fp(),n=P.length-1;const an=P[n];
   let B=1;for(let i=0;i<n;i++)B=Math.max(B,1+Math.abs(P[i]/an));B=Math.min(B,500);
@@ -318,8 +362,16 @@ function resize(){
 let rzq=0;new ResizeObserver(()=>{if(rzq)return;rzq=requestAnimationFrame(()=>{rzq=0;resize();});}).observe(stage);
 
 const NICE=[3,4,5,6,8,10,12,15,20,25,30,40,50,60,80,100,150,200,300,500];
+// 구간 창: 후보 = 양 끝값 + 창 안의 극값. 열린구간이면 끝값은 '닿지 않는' 값
+function winInfo(){if(!st.win||!st.Cknown)return null;const P=Fp(),{a,b,open}=st.win;
+  const ins=fpZeros().filter(q=>q.type!=='flat'&&q.x>a+1e-9&&q.x<b-1e-9).map(q=>({x:q.x,v:ev(P,q.x),type:q.type}));
+  const ends=[{x:a,v:ev(P,a),end:true},{x:b,v:ev(P,b),end:true}];const all=[...ends,...ins];
+  const tol=1e-7*Math.max(1,...all.map(c=>Math.abs(c.v)));const sup=Math.max(...all.map(c=>c.v)),inf=Math.min(...all.map(c=>c.v));
+  const att=open?ins:all;
+  return{ends,ins,sup,inf,cands:[ends[0],...ins,ends[1]],maxPts:att.filter(c=>Math.abs(c.v-sup)<tol),minPts:att.filter(c=>Math.abs(c.v-inf)<tol)};}
 function need(){
   const P=Fp();const z=fpZeros();let vals=[st.C,...z.map(c=>ev(P,c.x))];
+  if(st.win)vals.push(ev(P,st.win.a),ev(P,st.win.b));
   if(z.length===0){const x0=st.dbl?st.dbl.m:0;vals.push(ev(P,x0-1.2),ev(P,x0+1.2));}
   const M=Math.max(...vals.map(Math.abs));const want=Math.max(3,1.3*M);
   view.needF=NICE.find(v=>v>=want)||want;
@@ -426,6 +478,7 @@ function render(){
     if(Math.abs(ly-Yf(0))<15)ly=Math.max(12,Math.min(fH-12,y+(isMax?19:-17)));   // x축·눈금과 겹치면 반대쪽으로
     let lx=x,al='center';if(Math.abs(x-X(0))<34){lx=x+10;al='left';}               // y축 눈금 기둥을 피함
     label(`${isMax?'극대':'극소'}${st.Cknown?' '+txt(v):''}${tag}`,lx,ly,onAxis?c.cst:c.ink,c.surface,al,12,700);});
+  if(st.win)drawWin();
   // 상수항: y절편 마름모 + 오른쪽 세로 손잡이
   const yc=Yf(st.C),gx=gripX(),gy=Math.max(18,Math.min(fH-18,yc));
   if(st.Cknown){ctx.setLineDash([2,4]);ctx.strokeStyle=c.cst;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(X(0),gy);ctx.lineTo(gx,gy);ctx.stroke();ctx.setLineDash([]);
@@ -434,16 +487,46 @@ function render(){
   grip(gx,gy,22,34,c.cst,true);
   // f′ 손잡이: 그래프 위 마름모 + 부호 띠 위 알약
   const hy=Yd(0),by=bandMid();
-  st.roots.forEach(r=>{const x=X(r);diamond(x,hy,7,c.handle,c.handle);grip(x,by,30,22,c.handle,false);});
+  st.roots.forEach(r=>{const x=X(r);diamond(x,hy,7,c.handle,c.handle);if(!st.win)grip(x,by,30,22,c.handle,false);});
   if(st.dbl){const{m,d}=st.dbl;const x=X(m);const y=Math.max(dTop+14,Math.min(bandTop-14,Yd(vtxY())));
     diamond(x,y,9,c.handle,c.handle);
     ctx.fillStyle=c.handle;ctx.font=`700 11px ${UI}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('▲',x,y-17);ctx.fillText('▼',x,y+17);
-    grip(x,by,30,22,c.handle,false);
+    if(!st.win)grip(x,by,30,22,c.handle,false);
     const t=d>EPS?'놓으면 두 근':(d>=-EPS?'중근 · 위아래로 떼어 보기':'실근 없음');
     if(!(d>=-EPS&&d<=EPS))label(t,x,Math.max(dTop+12,Math.min(bandTop-30,y+(y<hy?-30:30))),c.handle,c.panel2,'center',11.5,700);
     else label(t,x,hy-30,c.handle,c.panel2,'center',11.5,700);}
+  if(st.win)drawWinGrips();
 }
 
+function pill(t,x,y,align,bg,fg,bd){ctx.font=`700 12.5px ${UI}`;const w=ctx.measureText(t).width+16,h=22;
+  let x0=align==='right'?x-w:align==='center'?x-w/2:x;x0=Math.max(2,Math.min(W-GRIPX-w-4,x0));y=Math.max(12,Math.min(fH-12,y));
+  rr(x0,y-h/2,w,h,11);ctx.fillStyle=bg;ctx.fill();if(bd){ctx.lineWidth=1.5;ctx.strokeStyle=bd;ctx.stroke();}
+  ctx.fillStyle=fg;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(t,x0+8,y+1);return w;}
+function drawWin(){const c=C_,{a,b,open}=st.win,xa=X(a),xb=X(b),P=Fp();
+  // 창 밖은 흐리게 (그래프·극값 이름까지)
+  ctx.globalAlpha=.74;ctx.fillStyle=c.surface;ctx.fillRect(0,0,xa,fH);ctx.fillRect(xb,0,W-xb,fH);
+  ctx.fillStyle=c.panel2;ctx.fillRect(0,dTop+1,xa,dH-1);ctx.fillRect(xb,dTop+1,W-xb,dH-1);ctx.globalAlpha=.06;ctx.fillStyle=c.handle;ctx.fillRect(xa,0,xb-xa,fH);ctx.globalAlpha=1;
+  ctx.setLineDash([6,4]);ctx.strokeStyle=c.handle;ctx.lineWidth=1.6;for(const x of[xa,xb]){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,bandTop);ctx.stroke();}ctx.setLineDash([]);
+  label(open?`(${txt(a)}, ${txt(b)})`:`[${txt(a)}, ${txt(b)}]`,(xa+xb)/2,14,c.handle,c.surface,'center',13,700);
+  const I=winInfo();if(!I)return;
+  // 최댓값·최솟값 높이선 + 이름표
+  const side=(W-GRIPX-xb>96)?'R':(xa>96?'L':'I');
+  const lev=(L,v,word,isMax)=>{const y=Yf(v);if(y<-20||y>fH+20)return;const none=!L.length;
+    ctx.setLineDash([4,4]);ctx.lineWidth=1.4;ctx.strokeStyle=none?c.muted:c.ink;ctx.beginPath();ctx.moveTo(xa,y);ctx.lineTo(xb,y);ctx.stroke();ctx.setLineDash([]);
+    const t=none?`${word} 없음`:`${word} ${txt(v)}`,bg=none?c.surface:c.ink,fg=none?c.muted:c.surface,bd=none?c.muted:null;
+    if(side==='R')pill(t,xb+6,y,'left',bg,fg,bd);else if(side==='L')pill(t,xa-6,y,'right',bg,fg,bd);else pill(t,xb-6,y+(isMax?-15:15),'right',bg,fg,bd);
+    L.forEach(q=>{ctx.beginPath();ctx.arc(X(q.x),Yf(q.v),9,0,7);ctx.lineWidth=2.6;ctx.strokeStyle=c.ink;ctx.stroke();});};
+  lev(I.maxPts,I.sup,'최댓값',true);lev(I.minPts,I.inf,'최솟값',false);
+  // 끝점: 닫힌구간은 채운 점, 열린구간은 빈 점
+  I.ends.forEach(q=>{const x=X(q.x),y=Yf(q.v);if(y<-10||y>fH+10)return;ctx.beginPath();ctx.arc(x,y,5.5,0,7);
+    if(open){ctx.fillStyle=c.surface;ctx.fill();ctx.lineWidth=2.2;ctx.strokeStyle=c.handle;ctx.stroke();}else{ctx.fillStyle=c.handle;ctx.fill();}});
+}
+function drawWinGrips(){const c=C_,xa=X(st.win.a),xb=X(st.win.b),by=bandMid();
+  rr(xa,bandTop+2,xb-xa,bandH-4,8);ctx.lineWidth=3;ctx.strokeStyle=c.handle;ctx.stroke();
+  const br=(x,open,left)=>{ctx.fillStyle=c.handle;ctx.font=`700 20px ${UI}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(open?(left?'(':')'):(left?'[':']'),x+(left?-14:14),by);};
+  grip(xa,by,20,30,c.handle,false);grip(xb,by,20,30,c.handle,false);
+  br(xa,st.win.open,true);br(xb,st.win.open,false);}
 /* ---------- interaction ---------- */
 const clampR=x=>Math.min(XMAX-0.5,Math.max(XMIN+0.5,x));
 function magnetGrid(v,stepU,px){const g=Math.round(v/stepU)*stepU;return Math.abs(v-g)*ppx()<px?g:v;}
@@ -459,11 +542,14 @@ cv.addEventListener('pointerdown',e=>{
   const p=pos(e);
   if(p.y<dTop){if(!st.Cknown){const g=cStep();st.C=Math.round(st.C/g)*g;st.Cknown=true;touched();changed();}st.cDragged=true;drag={type:'C',ly:p.y,raw:st.C};}
   else{
+    if(st.win&&p.y>=bandTop-6){const xa=X(st.win.a),xb=X(st.win.b),da=Math.abs(p.x-xa),db=Math.abs(p.x-xb);
+      if(Math.min(da,db)<26)drag={type:da<=db?'wa':'wb'};else if(p.x>xa&&p.x<xb)drag={type:'wm',x0:p.x,a0:st.win.a,b0:st.win.b};else return;
+      cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';e.preventDefault();return;}
     let best=null,bd=30;const hy=Yd(0),by=bandMid();
-    st.roots.forEach((r,i)=>{for(const yy of[hy,by]){const dd=Math.hypot(p.x-X(r),p.y-yy);if(dd<bd){bd=dd;best={type:'root',i};}}});
+    st.roots.forEach((r,i)=>{for(const yy of(st.win?[hy]:[hy,by])){const dd=Math.hypot(p.x-X(r),p.y-yy);if(dd<bd){bd=dd;best={type:'root',i};}}});
     if(st.dbl){const y=Math.max(dTop+14,Math.min(bandTop-14,Yd(vtxY())));const x=X(st.dbl.m);
       let dd=Math.hypot(p.x-x,p.y-y);if(dd<bd+4){bd=dd;best={type:'vtx'};}
-      dd=Math.hypot(p.x-x,p.y-by);if(dd<bd){bd=dd;best={type:'vtxH'};}}
+      dd=Math.hypot(p.x-x,p.y-by);if(!st.win&&dd<bd){bd=dd;best={type:'vtxH'};}}
     if(!best)return;drag=best;
   }
   cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';e.preventDefault();
@@ -476,6 +562,11 @@ cv.addEventListener('pointermove',e=>{
     const F=F0();for(const q of fpZeros()){const Ct=-ev(F,q.x);if(Math.abs(C-Ct)*ppu<12){C=Ct;tang=true;break;}}
     if(!tang){const stp=view.Hf<=6?0.5:view.Hf<=15?1:view.Hf<=40?5:10;const g=Math.round(C/stp)*stp;C=g;}
     if(tang&&!lastTangent)buzz();lastTangent=tang;if(C!==st.C||!st.Cknown)touched();st.C=C;st.Cknown=true;
+  }else if(drag.type==='wa'||drag.type==='wb'){
+    const v=Math.max(Math.ceil(XMIN),Math.min(Math.floor(XMAX),Math.round(iX(p.x))));const w=st.win;
+    if(drag.type==='wa')w.a=Math.min(v,w.b-1);else w.b=Math.max(v,w.a+1);
+  }else if(drag.type==='wm'){
+    let d=Math.round(iX(p.x)-iX(drag.x0));d=Math.max(Math.ceil(XMIN)-drag.a0,Math.min(Math.floor(XMAX)-drag.b0,d));st.win.a=drag.a0+d;st.win.b=drag.b0+d;
   }else if(drag.type==='root'){
     let v=clampR(iX(p.x));
     const others=st.roots.filter((_,j)=>j!==drag.i);let merged=false;
@@ -511,7 +602,7 @@ function endDrag(){
 cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
 
 function refresh(){prevCoef={};prevC=null;$('bCubic').setAttribute('aria-pressed',st.mode==='cubic');$('bQuartic').setAttribute('aria-pressed',st.mode==='quartic');syncSign();changed();}
-function setMode(m){st.mode=m;loadProblem(LIB[m][0]);refresh();}
+function setMode(m){st.mode=m;if(st.win)loadWin(WLIB[m][0]);else loadProblem(LIB[m][0]);refresh();}
 function syncSign(){$('bSign').textContent='최고차항 '+(st.s>0?'+':'−');}
 $('bCubic').onclick=()=>setMode('cubic');
 $('bQuartic').onclick=()=>setMode('quartic');
@@ -520,7 +611,10 @@ function setHelp(o){$('helpSheet').hidden=!o;$('bHelp').setAttribute('aria-expan
 $('bHelp').onclick=()=>setHelp($('helpSheet').hidden);$('bHelpClose').onclick=()=>setHelp(false);
 document.addEventListener('pointerdown',e=>{if(!$('helpSheet').hidden&&!e.target.closest('#helpSheet,#bHelp'))setHelp(false);});
 $('bFree').onclick=()=>{load(FREE[st.mode],false);refresh();};
-$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const p=LIB[st.mode].find(q=>q.id===b.dataset.id);if(p){loadProblem(p);refresh();}});
+$('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const p=curLib().find(q=>q.id===b.dataset.id);if(p){if(st.win)loadWin(p);else loadProblem(p);refresh();}});
+$('bWin').onclick=()=>{if(st.win){st.win=null;loadProblem(LIB[st.mode][0]);}else loadWin(WLIB[st.mode][0]);refresh();};
+$('bClosed').onclick=()=>{if(st.win){st.win.open=false;changed();}};
+$('bOpenIv').onclick=()=>{if(st.win){st.win.open=true;changed();}};
 $('bAns').onclick=()=>{const p=st.target;if(!p)return;load(p,true);st.src.name+=' 정답';refresh();};
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>dirty=true);}catch(_){}
 new MutationObserver(()=>dirty=true).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
