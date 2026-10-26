@@ -120,6 +120,15 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 .wres .no{color:var(--muted)}
 #bWin[aria-pressed="true"]{background:var(--handle);border-color:var(--handle);color:var(--handle-ink)}
 .bar .seg button{min-height:40px;font-family:var(--font-math);font-size:15px}
+.steps{display:flex;gap:6px;align-items:stretch}
+.steps .seg{flex:1 1 auto;min-width:0}
+.steps .seg button{flex:1 1 0;min-width:0;font-family:var(--font-ui);font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);padding:8px 2px;min-height:38px;cursor:pointer;white-space:nowrap}
+.steps .seg button.past{color:var(--ink)}
+.steps .seg button[aria-pressed="true"]{background:var(--handle);color:var(--handle-ink)}
+.steps .seg button+button{border-left:1px solid var(--line)}
+#bNext{flex:0 0 auto;font-family:var(--font-ui);font-size:13.5px;font-weight:700;color:var(--handle-ink);background:var(--handle);border:0;border-radius:10px;padding:0 14px;min-height:38px;cursor:pointer}
+#bNext:disabled{opacity:.35;cursor:default}
+.steps button:focus-visible{outline:2px solid var(--handle);outline-offset:2px}
 </style>
 
 <div class="app">
@@ -145,9 +154,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
       <li><b class="hc">청록 손잡이</b> 오른쪽 손잡이나 위쪽 그래프를 위아래로 끌면 높이(상수항)가 정해져요.</li>
       <li><b>교과서 칩</b> 문제의 <i>f</i>(<i>x</i>)를 내 함수 <i>g</i>(<i>x</i>)로 직접 만들어 봐요. 막히면 '정답 보기'.</li>
       <li><b>최고차항 ±</b> 그래프를 위아래로 뒤집어요. <b>직접 만들기</b>는 문제 없이 자유롭게.</li>
-      <li><b class="hp">구간 창</b> 최댓값·최솟값 찾기. 아래 띠의 양 끝 손잡이로 <i>a</i>, <i>b</i>를, 가운데를 끌면 창 전체를 옮겨요. 후보는 창 안의 극값과 양 끝값. <b>[ ]</b>·<b>( )</b>로 닫힌/열린구간을 바꿔요.</li>
+      <li><b class="hp">구간 창</b> 최댓값·최솟값 찾기. 아래 띠의 양 끝 손잡이로 <i>a</i>, <i>b</i>를, 가운데를 끌면 창 전체를 옮겨요. ①개형 → ②구간 → ③후보(양 끝값 + 창 안의 극값) → ④비교 순서로 '다음'을 눌러요. <b>[ ]</b>·<b>( )</b>로 닫힌/열린구간을 바꿔요.</li>
     </ul>
     <button class="hclose" id="bHelpClose">닫기</button>
+  </div>
+  <div class="steps" id="steps" hidden>
+    <div class="seg" id="stepSeg" role="group" aria-label="최대·최소 단계"><button data-s="1">① 개형</button><button data-s="2">② 구간</button><button data-s="3">③ 후보</button><button data-s="4">④ 비교</button></div>
+    <button id="bNext">다음 ▶</button>
   </div>
   <nav class="bar">
     <button id="bSign">최고차항 +</button>
@@ -212,10 +225,10 @@ function polyHTML(P,C){const n=P.length-1;let out='',first=true;
   for(let i=n;i>=1;i--){const c=P[i];if(Math.abs(c)<1e-7)continue;const a=Math.abs(c);
     out+=(first?(c<0?'−':''):(c<0?' − ':' + '))+(Math.abs(a-1)<EPS?'':num(a))+(i>1?`<i>x</i><sup>${i}</sup>`:'<i>x</i>');first=false;}
   if(Math.abs(C)>EPS)out+=(C<0?' − ':' + ')+num(Math.abs(C));return out;}
-function loadWin(p){load(p,true);st.win={a:p.iv[0],b:p.iv[1],open:!!p.open};}
+function loadWin(p){load(p,true);st.win={a:p.iv[0],b:p.iv[1],open:!!p.open};st.step=1;}
 loadProblem(LIB.cubic[0]);
 
-const view={Hf:6,Hd:4,needF:6,needD:4,ax:1,Dc:0,needDc:0};
+const view={Hf:6,Hd:4,needF:6,needD:4,ax:1,Dc:0,needDc:0,wa:0,wb:0};
 let drag=null, dirty=true, lastTangent=false, W=0,H=0,dpr=1,fH=0,dTop=0,dH=0,bandH=36,bandTop=0;
 
 function fp(){let p=[st.s*st.K];for(const r of st.roots)p=mul(p,[-r,1]);if(st.dbl){const{m,d}=st.dbl;p=mul(p,[m*m-d,-2*m,1]);}return p;}
@@ -302,16 +315,19 @@ function renderFormula(){
   $('rootLine').innerHTML=st.Cknown?`<span class="cnt">교점 ${cnt}개</span>${form}`:`<span class="cnt">교점 ?개</span><span class="unknown">높이를 정해야 알 수 있어요</span>`;
   {const nm=st.target?'g':'f';$('labFp').textContent=nm+'′(x) =';$('labF').textContent=nm+'(x) =';}
   $('rootRow').hidden=!!st.win;$('winRow').hidden=!st.win;
-  if(st.win){const I=winInfo();const{a,b,open}=st.win;const iv=open?`(${sn(a)}, ${sn(b)})`:`[${sn(a)}, ${sn(b)}]`;
-    if(!I)$('winLine').innerHTML=`<span class="wiv">${iv}</span><span class="unknown">높이를 정해야 알 수 있어요</span>`;
+  if(st.win){const I=winInfo();const{a,b,open}=st.win;const iv=open?`(${sn(a)}, ${sn(b)})`:`[${sn(a)}, ${sn(b)}]`;const S=st.step;
+    if(S===1)$('winLine').innerHTML=`<span class="unknown">먼저 전체 그래프의 개형</span>`;
+    else if(S===2)$('winLine').innerHTML=`<span class="wiv">${iv}</span><span class="unknown">이 구간만 봐요</span>`;
+    else if(!I)$('winLine').innerHTML=`<span class="wiv">${iv}</span><span class="unknown">높이를 정해야 알 수 있어요</span>`;
     else{const has=(L,c)=>L.some(q=>q===c);
       const cs=I.cands.map(c=>{let cl='cd',t;
         if(c.end){t=`<i>f</i>(${sn(c.x)}) = ${sn(c.v)}`;if(open)cl+=' cop';}else t=`${c.type==='max'?'극대':'극소'} ${sn(c.v)}`;
-        if(has(I.maxPts,c))cl+=' cmx';else if(has(I.minPts,c))cl+=' cmn';return `<span class="${cl}">${t}</span>`;}).join('');
+        if(S>=4){if(has(I.maxPts,c))cl+=' cmx';else if(has(I.minPts,c))cl+=' cmn';}return `<span class="${cl}">${t}</span>`;}).join('');
       const r=(L,v,w)=>L.length?`${w} ${sn(v)}`:`<span class="no">${w} 없음</span>`;
-      $('winLine').innerHTML=`<span class="wiv">${iv}</span>${cs}<span class="wres">→ ${r(I.maxPts,I.sup,'최대')} · ${r(I.minPts,I.inf,'최소')}</span>`;}}
+      $('winLine').innerHTML=`<span class="wiv">${iv}</span>${cs}`+(S>=4?`<span class="wres">→ ${r(I.maxPts,I.sup,'최대')} · ${r(I.minPts,I.inf,'최소')}</span>`:`<span class="wres"><span class="no">후보 ${I.cands.length}개 — 누가 가장 클까?</span></span>`);}}
   $('probCard').hidden=!st.target;$('bAns').hidden=!st.target||st.done||!!st.win;$('bFree').hidden=!!st.win;
-  $('segOpen').hidden=!st.win;$('bWin').setAttribute('aria-pressed',!!st.win);
+  $('segOpen').hidden=!st.win||st.step<2;$('steps').hidden=!st.win;
+  if(st.win){document.querySelectorAll('#stepSeg button').forEach(b=>{const k=+b.dataset.s;b.setAttribute('aria-pressed',k===st.step);b.classList.toggle('past',k<st.step);});$('bNext').disabled=st.step>=4;}$('bWin').setAttribute('aria-pressed',!!st.win);
   if(st.win){$('bClosed').setAttribute('aria-pressed',!st.win.open);$('bOpenIv').setAttribute('aria-pressed',st.win.open);}
   if(st.target){$('probLab').textContent=`문제 · ${st.src.name}`;$('probLine').innerHTML='<i>f</i>(<i>x</i>) = '+polyHTML(targetF0(),st.target.C);
     const ps=$('probStat');ps.textContent=st.done?'g = f 완성!':fpOK?'g′ = f′ · 이제 높이':'만드는 중';ps.className='pstat'+(st.done?' done':fpOK?' half':'');}
@@ -502,14 +518,22 @@ function pill(t,x,y,align,bg,fg,bd){ctx.font=`700 12.5px ${UI}`;const w=ctx.meas
   let x0=align==='right'?x-w:align==='center'?x-w/2:x;x0=Math.max(2,Math.min(W-GRIPX-w-4,x0));y=Math.max(12,Math.min(fH-12,y));
   rr(x0,y-h/2,w,h,11);ctx.fillStyle=bg;ctx.fill();if(bd){ctx.lineWidth=1.5;ctx.strokeStyle=bd;ctx.stroke();}
   ctx.fillStyle=fg;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(t,x0+8,y+1);return w;}
-function drawWin(){const c=C_,{a,b,open}=st.win,xa=X(a),xb=X(b),P=Fp();
+function drawWin(){if(st.step<2)return;const c=C_,{a,b,open}=st.win,xa=X(view.wa),xb=X(view.wb),P=Fp();
   // 창 밖은 흐리게 (그래프·극값 이름까지)
   ctx.globalAlpha=.74;ctx.fillStyle=c.surface;ctx.fillRect(0,0,xa,fH);ctx.fillRect(xb,0,W-xb,fH);
   ctx.fillStyle=c.panel2;ctx.fillRect(0,dTop+1,xa,dH-1);ctx.fillRect(xb,dTop+1,W-xb,dH-1);ctx.globalAlpha=.06;ctx.fillStyle=c.handle;ctx.fillRect(xa,0,xb-xa,fH);ctx.globalAlpha=1;
   ctx.setLineDash([6,4]);ctx.strokeStyle=c.handle;ctx.lineWidth=1.6;for(const x of[xa,xb]){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,bandTop);ctx.stroke();}ctx.setLineDash([]);
   label(open?`(${txt(a)}, ${txt(b)})`:`[${txt(a)}, ${txt(b)}]`,(xa+xb)/2,14,c.handle,c.surface,'center',13,700);
-  const I=winInfo();if(!I)return;
-  // 최댓값·최솟값 높이선 + 이름표
+  const I=winInfo();if(!I||st.step<3)return;
+  // ③ 후보: 창 밖의 극값은 ✕, 창 안의 극값은 보라 고리
+  fpZeros().filter(q=>q.type!=='flat').forEach(q=>{const x=X(q.x),y=Yf(ev(P,q.x));if(y<-10||y>fH+10)return;
+    if(q.x<a-1e-9||q.x>b+1e-9){ctx.lineWidth=2.4;ctx.strokeStyle=c.muted;ctx.beginPath();ctx.moveTo(x-6,y-6);ctx.lineTo(x+6,y+6);ctx.moveTo(x+6,y-6);ctx.lineTo(x-6,y+6);ctx.stroke();
+      label('구간 밖',x,y+(q.type==='max'?20:-20),c.muted,c.surface,'center',11.5,700);}
+    else if(q.x>a+1e-9&&q.x<b-1e-9){ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.lineWidth=2.4;ctx.strokeStyle=c.handle;ctx.stroke();}});
+  const endDots=()=>I.ends.forEach(q=>{const x=X(q.x),y=Yf(q.v);if(y<-10||y>fH+10)return;ctx.beginPath();ctx.arc(x,y,5.5,0,7);
+    if(open){ctx.fillStyle=c.surface;ctx.fill();ctx.lineWidth=2.2;ctx.strokeStyle=c.handle;ctx.stroke();}else{ctx.fillStyle=c.handle;ctx.fill();}});
+  if(st.step<4){endDots();return;}
+  // ④ 비교: 최댓값·최솟값 높이선 + 이름표
   const side=(W-GRIPX-xb>96)?'R':(xa>96?'L':'I');
   const lev=(L,v,word,isMax)=>{const y=Yf(v);if(y<-20||y>fH+20)return;const none=!L.length;
     ctx.setLineDash([4,4]);ctx.lineWidth=1.4;ctx.strokeStyle=none?c.muted:c.ink;ctx.beginPath();ctx.moveTo(xa,y);ctx.lineTo(xb,y);ctx.stroke();ctx.setLineDash([]);
@@ -517,11 +541,9 @@ function drawWin(){const c=C_,{a,b,open}=st.win,xa=X(a),xb=X(b),P=Fp();
     if(side==='R')pill(t,xb+6,y,'left',bg,fg,bd);else if(side==='L')pill(t,xa-6,y,'right',bg,fg,bd);else pill(t,xb-6,y+(isMax?-15:15),'right',bg,fg,bd);
     L.forEach(q=>{ctx.beginPath();ctx.arc(X(q.x),Yf(q.v),9,0,7);ctx.lineWidth=2.6;ctx.strokeStyle=c.ink;ctx.stroke();});};
   lev(I.maxPts,I.sup,'최댓값',true);lev(I.minPts,I.inf,'최솟값',false);
-  // 끝점: 닫힌구간은 채운 점, 열린구간은 빈 점
-  I.ends.forEach(q=>{const x=X(q.x),y=Yf(q.v);if(y<-10||y>fH+10)return;ctx.beginPath();ctx.arc(x,y,5.5,0,7);
-    if(open){ctx.fillStyle=c.surface;ctx.fill();ctx.lineWidth=2.2;ctx.strokeStyle=c.handle;ctx.stroke();}else{ctx.fillStyle=c.handle;ctx.fill();}});
+  endDots();
 }
-function drawWinGrips(){const c=C_,xa=X(st.win.a),xb=X(st.win.b),by=bandMid();
+function drawWinGrips(){if(st.step<2)return;const c=C_,xa=X(view.wa),xb=X(view.wb),by=bandMid();
   rr(xa,bandTop+2,xb-xa,bandH-4,8);ctx.lineWidth=3;ctx.strokeStyle=c.handle;ctx.stroke();
   const br=(x,open,left)=>{ctx.fillStyle=c.handle;ctx.font=`700 20px ${UI}`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(open?(left?'(':')'):(left?'[':']'),x+(left?-14:14),by);};
@@ -542,6 +564,7 @@ cv.addEventListener('pointerdown',e=>{
   const p=pos(e);
   if(p.y<dTop){if(!st.Cknown){const g=cStep();st.C=Math.round(st.C/g)*g;st.Cknown=true;touched();changed();}st.cDragged=true;drag={type:'C',ly:p.y,raw:st.C};}
   else{
+    if(st.win&&st.step<2&&p.y>=bandTop-6)return;
     if(st.win&&p.y>=bandTop-6){const xa=X(st.win.a),xb=X(st.win.b),da=Math.abs(p.x-xa),db=Math.abs(p.x-xb);
       if(Math.min(da,db)<26)drag={type:da<=db?'wa':'wb'};else if(p.x>xa&&p.x<xb)drag={type:'wm',x0:p.x,a0:st.win.a,b0:st.win.b};else return;
       cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';e.preventDefault();return;}
@@ -613,6 +636,9 @@ document.addEventListener('pointerdown',e=>{if(!$('helpSheet').hidden&&!e.target
 $('bFree').onclick=()=>{load(FREE[st.mode],false);refresh();};
 $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const p=curLib().find(q=>q.id===b.dataset.id);if(p){if(st.win)loadWin(p);else loadProblem(p);refresh();}});
 $('bWin').onclick=()=>{if(st.win){st.win=null;loadProblem(LIB[st.mode][0]);}else loadWin(WLIB[st.mode][0]);refresh();};
+function setStep(n){if(!st.win)return;n=Math.max(1,Math.min(4,n));if(n>=2&&st.step<2){view.wa=XMIN;view.wb=XMAX;}st.step=n;changed();}
+$('stepSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setStep(+b.dataset.s);});
+$('bNext').onclick=()=>setStep((st.step||1)+1);
 $('bClosed').onclick=()=>{if(st.win){st.win.open=false;changed();}};
 $('bOpenIv').onclick=()=>{if(st.win){st.win.open=true;changed();}};
 $('bAns').onclick=()=>{const p=st.target;if(!p)return;load(p,true);st.src.name+=' 정답';refresh();};
@@ -624,6 +650,8 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>dirty=true
 function ease(k,target,widenOnly,freeze){if(freeze)return;let t=target;if(widenOnly)t=Math.max(view[k],target);
   if(Math.abs(view[k]-t)>1e-3*t){view[k]+=(t-view[k])*(widenOnly?0.35:0.18);dirty=true;}else if(view[k]!==t){view[k]=t;dirty=true;}}
 function frame(){
+  if(st.win&&st.step>=2){const dr=drag&&/^w/.test(drag.type);for(const[k,t]of[['wa',st.win.a],['wb',st.win.b]]){
+    if(dr){if(view[k]!==t){view[k]=t;dirty=true;}}else if(Math.abs(view[k]-t)>2e-3){view[k]+=(t-view[k])*0.12;dirty=true;}else if(view[k]!==t){view[k]=t;dirty=true;}}}
   ease('Hf',view.needF,!!drag,false);
   ease('Hd',view.needD,false,drag&&drag.type==='vtx');
   if(!(drag&&drag.type==='vtx')){const t=view.needDc;if(Math.abs(view.Dc-t)>1e-3*view.Hd){view.Dc+=(t-view.Dc)*0.18;dirty=true;}else if(view.Dc!==t){view.Dc=t;dirty=true;}}
