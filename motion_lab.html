@@ -39,7 +39,19 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);overflow:h
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--handle);outline-offset:2px}
 
-.main{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px}
+.main{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px}
+.leftcol{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
+.leftcol .stage{flex:1 1 auto}
+.playbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.playbar input[type=range]{flex:1 1 auto;min-width:80px}
+.playbar .seg{flex:0 0 auto}
+.playbar .seg button{padding:6px 10px;font-size:12.5px;white-space:nowrap}
+.playbar .btn{white-space:nowrap}
+.hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.opts{gap:8px}
+.opts summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);list-style:none}
+.opts summary::before{content:"＋ ";color:var(--handle)}
+.opts[open] summary::before{content:"－ "}
 .stage{position:relative;min-height:0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;font-weight:700;padding:7px 16px;border-radius:999px;
@@ -47,24 +59,24 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .toast.show{animation:pop .35s ease-out}
 @keyframes pop{from{transform:translateX(-50%) scale(.85);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 
-.side{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:4px}
+.side{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:4px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .cap{font-size:12px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;gap:8px}
 .cap b{color:var(--ink);font-weight:700}
 .frow{display:flex;align-items:baseline;gap:8px;min-width:0}
 .lab{flex:0 0 52px;white-space:nowrap;font-family:var(--font-math);font-style:italic;font-size:16px;color:var(--muted)}
-.ex{font-family:var(--font-math);font-size:19px;line-height:1.45;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.ex{font-family:var(--font-math);font-size:18px;line-height:1.35;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
 .ex::-webkit-scrollbar{display:none}
 .ex i{font-style:italic}
 .ex sup{font-size:.62em;vertical-align:.55em;line-height:0}
 .ex .txt{font-family:var(--font-ui);font-size:13px;color:var(--muted)}
 .ex .on{background:var(--handle);color:var(--handle-ink);border-radius:5px;padding:0 5px}
 
-.read{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.read{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
 .cell{display:flex;flex-direction:column;gap:0;min-width:0}
 .cell .k{font-size:11.5px;color:var(--muted);font-weight:500}
 .cell .k i{font-family:var(--font-math);font-size:14px}
-.cell .val{font-family:var(--font-math);font-size:24px;font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
+.cell .val{font-family:var(--font-math);font-size:22px;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
 .cell .val small{font-size:13px;color:var(--muted);margin-left:3px;font-family:var(--font-ui)}
 .cell .spd{font-size:12px;color:var(--muted)}
 .cell .spd b{font-family:var(--font-math);font-size:15px;color:var(--ink);font-weight:600}
@@ -104,7 +116,7 @@ details[open] summary::before{content:"－ "}
 .err{font-size:12px;color:var(--up);min-height:1em}
 
 .pad{display:grid;grid-template-columns:1fr;gap:8px}
-.pad button{font-family:var(--font-ui);font-size:17px;font-weight:700;border-radius:14px;min-height:64px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;border:2px solid}
+.pad button{font-family:var(--font-ui);font-size:17px;font-weight:700;border-radius:14px;min-height:58px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;border:2px solid}
 #bUp{background:var(--up-bg);border-color:var(--up);color:var(--up)}
 #bDown{background:var(--down-bg);border-color:var(--down);color:var(--down)}
 .pad button.held{filter:brightness(.92);transform:scale(.98)}
@@ -112,10 +124,12 @@ details[open] summary::before{content:"－ "}
 .hint{font-size:12px;color:var(--muted);line-height:1.5}
 
 .icons{display:flex;gap:6px;flex-wrap:wrap}
-.icons button{font-family:var(--font-ui);font-size:12.5px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:4px}
-.icons button span{font-family:var(--font-emoji);font-size:18px;display:inline-flex}
-.icons button span img{width:20px;height:20px;border-radius:50%;object-fit:cover}
-.icons button[aria-pressed="true"]{border-color:var(--handle);box-shadow:inset 0 0 0 1.5px var(--handle)}
+.icons button{font-family:var(--font-ui);font-size:12.5px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0;width:38px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.icons button .nm{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.icons button .em{font-family:var(--font-emoji);font-size:19px;display:inline-flex}
+.icons button .em img{width:20px;height:20px;border-radius:50%;object-fit:cover}
+.icons{display:flex;gap:4px}
+.icons button[aria-pressed="true"]{border-color:var(--handle);box-shadow:inset 0 0 0 1.5px var(--handle);background:var(--panel2)}
 .tg{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;cursor:pointer}
 .tg input{appearance:none;-webkit-appearance:none;width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:0 0 auto;margin:0;transition:background .15s}
 .tg input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .15s}
@@ -128,6 +142,8 @@ details[open] summary::before{content:"－ "}
   .main{grid-template-columns:minmax(0,1fr)}
   .stage{height:min(64vh,600px);min-height:380px}
   .side{overflow:visible}
+  .playbar{flex-wrap:wrap}
+  .playbar input[type=range]{flex-basis:100%;order:3}
 }
 @media (prefers-reduced-motion: reduce){ .toast.show{animation:none} }
 </style>
@@ -135,17 +151,33 @@ details[open] summary::before{content:"－ "}
 <div class="app">
   <header class="top">
     <div class="ttl"><h1>속도와 가속도 탐구실</h1><span class="sub">교과서 103~106쪽 · 수직선 위를 움직이는 점</span></div>
+    <div class="hr">
+    <div class="icons" id="icons" aria-label="타는 것"></div>
+    <input type="file" id="photoIn" accept="image/*" hidden>
     <div class="seg" id="modeSeg">
       <button id="mBook" aria-pressed="true">교과서 운동</button>
       <button id="mDrive" aria-pressed="false">직접 운전</button>
     </div>
+    </div>
   </header>
 
   <div class="main">
+    <div class="leftcol">
     <section class="stage" id="stage">
       <canvas id="cv" aria-label="수직선 위 물체와 위치·속도·가속도 그래프"></canvas>
       <div class="toast" id="toast" hidden></div>
     </section>
+    <div class="playbar" id="playbar">
+      <button class="btn primary" id="bPlay">▶ 재생</button>
+      <button class="btn" id="bReset">처음으로</button>
+      <input type="range" id="tSlider" min="0" max="1000" value="0" aria-label="시각 t">
+      <div class="seg" id="spdSeg">
+        <button data-s="16" aria-pressed="false">느리게</button>
+        <button data-s="8" aria-pressed="true">보통</button>
+        <button data-s="4" aria-pressed="false">빠르게</button>
+      </div>
+    </div>
+    </div>
 
     <aside class="side">
       <div class="card" id="fCard">
@@ -155,31 +187,22 @@ details[open] summary::before{content:"－ "}
         <div class="frow"><span class="lab">a(t) =</span><span class="ex" id="fa"></span></div>
       </div>
 
-      <div class="card read">
+      <div class="card">
+      <div class="read">
         <div class="cell"><span class="k">시각 <i>t</i></span><span class="val" id="rT"></span></div>
         <div class="cell"><span class="k">위치 <i>x</i></span><span class="val" id="rX"></span></div>
         <div class="cell"><span class="k">속도 <i>v</i></span><span class="val" id="rV"></span><span class="spd">속력 |<i>v</i>| = <b id="rS"></b></span></div>
         <div class="cell"><span class="k">가속도 <i>a</i></span><span class="val" id="rA"></span></div>
       </div>
-
-      <div class="card states">
+      <div class="states">
         <div class="st"><span class="k">운동 방향</span><span class="pill" id="pDir"></span></div>
         <div class="st"><span class="k">속력</span><span class="pill" id="pSpd"></span></div>
         <div class="st" id="bodyRow" hidden><span class="k">탄 사람 몸무게 느낌</span><span class="pill" id="pBody"></span></div>
       </div>
+      </div>
 
       <div class="card" id="bookCtl">
         <div class="chips" id="chips"></div>
-        <div class="prow">
-          <button class="btn primary" id="bPlay">▶ 재생</button>
-          <button class="btn" id="bReset">처음으로</button>
-          <div class="seg" id="spdSeg">
-            <button data-s="16" aria-pressed="false">느리게</button>
-            <button data-s="8" aria-pressed="true">보통</button>
-            <button data-s="4" aria-pressed="false">빠르게</button>
-          </div>
-        </div>
-        <input type="range" id="tSlider" min="0" max="1000" value="0" aria-label="시각 t">
         <details id="custDet">
           <summary>식 직접 입력</summary>
           <div class="custom">
@@ -195,17 +218,15 @@ details[open] summary::before{content:"－ "}
           <button id="bUp">▲ 위로 밀기<small>a = +2</small></button>
           <button id="bDown">▼ 아래로 밀기<small>a = −2</small></button>
         </div>
-        <div class="prow"><button class="btn" id="bDReset">처음부터</button><span class="hint">누르는 동안만 밀어요. 손을 떼면 <i>a</i> = 0. 키보드 ↑ ↓도 됩니다.</span></div>
+        <div class="prow"><button class="btn" id="bDReset">처음부터</button><span class="hint">누르는 동안만 밀어요 · 키보드 ↑↓</span></div>
       </div>
 
-      <div class="card">
-        <div class="cap"><span>타는 것</span></div>
-        <div class="icons" id="icons"></div>
-        <input type="file" id="photoIn" accept="image/*" hidden>
+      <details class="card opts">
+        <summary>보기 옵션</summary>
         <label class="tg">전체 그래프 미리 보기<input type="checkbox" id="oPrev" checked></label>
         <label class="tg">진행 방향으로 돌아보기<input type="checkbox" id="oFace"></label>
         <label class="tg">직접 운전 불꽃<input type="checkbox" id="oFlame" checked></label>
-      </div>
+      </details>
     </aside>
   </div>
 </div>
@@ -394,13 +415,13 @@ function draw(){
   ctx.textAlign='right'; ctx.font=`italic 15px ${getFont('math')}`; ctx.fillText('t',G.R+4,G.pa.y1+3);
 
   // 세로 눈금 + 수직선 (x 패널은 수직선 기둥까지 가로줄 연장)
-  const yTicks=(P,r,fromX)=>{ ctx.textAlign='right'; ctx.textBaseline='middle';
+  const yTicks=(P,r,fromX,skipTop)=>{ ctx.textAlign='right'; ctx.textBaseline='middle';
     for(let v=r.lo;v<=r.hi+1e-9;v+=r.st){ const y=Y(v,P,r); const zero=Math.abs(v)<r.st*1e-6;
       ctx.strokeStyle=zero?C.muted:C.grid; ctx.lineWidth=zero?1.4:1;
       ctx.beginPath(); ctx.moveTo(fromX,y); ctx.lineTo(G.R,y); ctx.stroke();
-      ctx.fillStyle=C.muted; ctx.fillText(fmt(zero?0:v,2),G.L-7,y); } };
+      if(skipTop&&Math.abs(y-P.y0)<1) continue; ctx.fillStyle=C.muted; ctx.fillText(fmt(zero?0:v,2),G.L-7,y); } };
   ctx.save(); ctx.setLineDash([]); yTicks(G.px,rx,G.TX); ctx.restore();
-  yTicks(G.pv,rv,G.L); yTicks(G.pa,ra,G.L);
+  yTicks(G.pv,rv,G.L,true); yTicks(G.pa,ra,G.L,true);
   // 패널 테두리 왼쪽
   ctx.strokeStyle=C.line; ctx.lineWidth=1;
   for(const P of [G.px,G.pv,G.pa]){ ctx.beginPath(); ctx.moveTo(G.L,P.y0); ctx.lineTo(G.L,P.y1); ctx.stroke(); }
@@ -523,7 +544,7 @@ function updateSide(){
   else { pd.textContent='● 멈춤'; pd.classList.add('zer'); }
   const ps=$('pSpd'); ps.className='pill';
   const pr=c.v*c.a;
-  if(Math.abs(c.v)<=c.epsV&&Math.abs(c.a)>c.epsA){ ps.textContent='막 움직이려는 순간'; ps.classList.add('neu'); }
+  if(Math.abs(c.v)<=c.epsV&&Math.abs(c.a)>c.epsA){ ps.textContent='순간 정지'; ps.classList.add('neu'); }
   else if(Math.abs(c.a)<=c.epsA){ ps.textContent='일정'; ps.classList.add('neu'); }
   else if(pr>0){ ps.textContent='빨라지는 중'; ps.classList.add('neu'); }
   else { ps.textContent='느려지는 중'; ps.classList.add('neu'); }
@@ -587,7 +608,7 @@ $('bDReset').onclick=resetDrive;
 
 /* ---------- 모드 · 아이콘 · 옵션 ---------- */
 function setMode(m){ S.mode=m; $('mBook').setAttribute('aria-pressed',String(m==='book')); $('mDrive').setAttribute('aria-pressed',String(m==='drive'));
-  $('bookCtl').hidden=m!=='book'; $('driveCtl').hidden=m!=='drive';
+  $('bookCtl').hidden=m!=='book'; $('playbar').hidden=m!=='book'; $('driveCtl').hidden=m!=='drive'; requestAnimationFrame(resize);
   if(m==='drive'){ S.playing=false; updatePlayBtn(); resetDrive();
     $('pTitle').innerHTML='<b>직접 운전</b> 버튼으로 미는 운동'; $('pPage').textContent='';
     $('fx').innerHTML='<span class="txt">식 없음 — 버튼으로 움직여요</span>'; $('fv').innerHTML='<span class="txt">위치의 순간변화율</span>'; }
@@ -595,8 +616,8 @@ function setMode(m){ S.mode=m; $('mBook').setAttribute('aria-pressed',String(m==
 $('mBook').onclick=()=>setMode('book'); $('mDrive').onclick=()=>setMode('drive');
 function setIcon(id){ S.icon=id; document.querySelectorAll('#icons button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===id))); }
 function renderIcons(){
-  $('icons').innerHTML=ICONS.map(i=>`<button data-id="${i.id}" aria-pressed="false"><span>${i.img?`<img src="${i.src}" alt="">`:i.e}</span>${i.name}</button>`).join('')
-    +'<button id="bPhoto" type="button"><span>📷</span>사진 넣기</button>';
+  $('icons').innerHTML=ICONS.map(i=>`<button data-id="${i.id}" aria-pressed="false" title="${i.name}"><span class="em">${i.img?`<img src="${i.src}" alt="">`:i.e}</span><span class="nm">${i.name}</span></button>`).join('')
+    +'<button id="bPhoto" type="button" title="사진 넣기"><span class="em">📷</span><span class="nm">사진 넣기</span></button>';
   document.querySelectorAll('#icons button[data-id]').forEach(b=>b.onclick=()=>setIcon(b.dataset.id));
   $('bPhoto').onclick=()=>$('photoIn').click();
   setIcon(S.icon);
