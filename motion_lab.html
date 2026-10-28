@@ -115,8 +115,11 @@ details[open] summary::before{content:"－ "}
 .custom .tin{width:64px}
 .err{font-size:12px;color:var(--up);min-height:1em}
 
-.pad{display:grid;grid-template-columns:1fr;gap:8px}
-.pad button{font-family:var(--font-ui);font-size:17px;font-weight:700;border-radius:14px;min-height:58px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;border:2px solid}
+.drivebar{display:flex;align-items:stretch;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.drivebar #bUp,.drivebar #bDown{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:14px}
+.drivebar .btn{white-space:nowrap;align-self:center}
+.pad .ax{font-family:var(--font-math);font-style:italic;font-size:26px;font-weight:600;white-space:nowrap}
+.pad #bUp,.pad #bDown{font-family:var(--font-ui);font-size:17px;font-weight:700;border-radius:12px;min-height:52px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;border:2px solid}
 #bUp{background:var(--up-bg);border-color:var(--up);color:var(--up)}
 #bDown{background:var(--down-bg);border-color:var(--down);color:var(--down)}
 .pad button.held{filter:brightness(.92);transform:scale(.98)}
@@ -163,10 +166,6 @@ details[open] summary::before{content:"－ "}
 
   <div class="main">
     <div class="leftcol">
-    <section class="stage" id="stage">
-      <canvas id="cv" aria-label="수직선 위 물체와 위치·속도·가속도 그래프"></canvas>
-      <div class="toast" id="toast" hidden></div>
-    </section>
     <div class="playbar" id="playbar">
       <button class="btn primary" id="bPlay">▶ 재생</button>
       <button class="btn" id="bReset">처음으로</button>
@@ -177,6 +176,15 @@ details[open] summary::before{content:"－ "}
         <button data-s="4" aria-pressed="false">빠르게</button>
       </div>
     </div>
+    <div class="drivebar pad" id="driveCtl" hidden>
+      <button id="bUp" title="누르는 동안만 밀어요 (키보드 ↑)">▲ 위로 밀기 <span class="ax">a = +2</span></button>
+      <button id="bDown" title="누르는 동안만 밀어요 (키보드 ↓)">▼ 아래로 밀기 <span class="ax">a = −2</span></button>
+      <button class="btn" id="bDReset">처음부터</button>
+    </div>
+    <section class="stage" id="stage">
+      <canvas id="cv" aria-label="수직선 위 물체와 위치·속도·가속도 그래프"></canvas>
+      <div class="toast" id="toast" hidden></div>
+    </section>
     </div>
 
     <aside class="side">
@@ -213,13 +221,6 @@ details[open] summary::before{content:"－ "}
         </details>
       </div>
 
-      <div class="card" id="driveCtl" hidden>
-        <div class="pad">
-          <button id="bUp">▲ 위로 밀기<small>a = +2</small></button>
-          <button id="bDown">▼ 아래로 밀기<small>a = −2</small></button>
-        </div>
-        <div class="prow"><button class="btn" id="bDReset">처음부터</button><span class="hint">누르는 동안만 밀어요 · 키보드 ↑↓</span></div>
-      </div>
 
       <details class="card opts">
         <summary>보기 옵션</summary>
