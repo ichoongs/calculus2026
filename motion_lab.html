@@ -204,7 +204,7 @@ details[open] summary::before{content:"－ "}
         <input type="file" id="photoIn" accept="image/*" hidden>
         <label class="tg">전체 그래프 미리 보기<input type="checkbox" id="oPrev" checked></label>
         <label class="tg">진행 방향으로 돌아보기<input type="checkbox" id="oFace"></label>
-        <label class="tg">움직일 때 불꽃<input type="checkbox" id="oFlame" checked></label>
+        <label class="tg">직접 운전 불꽃<input type="checkbox" id="oFlame" checked></label>
       </div>
     </aside>
   </div>
@@ -490,10 +490,10 @@ function drawRider(x,y,c){
   const size=W<560?26:32;
   const rot=!ic.fixed&&!ic.spin;
   const nose=(rot&&S.face&&fState.facing<0)?-1:1;   // 머리 방향: +1 위, −1 아래
-  // 불꽃: 움직이는 동안 항상 꼬리에서, 같은 크기로 (가속도는 화살표로만 표시)
-  if(S.flame&&rot&&Math.abs(c.v)>c.epsV){
-    const fs=20*(0.9+0.2*Math.random());
-    ctx.save(); ctx.translate(sx,y+nose*(size*(ic.img?0.85:0.55)+fs*0.35)); if(nose>0) ctx.rotate(Math.PI);
+  // 불꽃: 직접 운전에서 버튼을 누르는 동안만. 미는 방향의 반대쪽에서 뿜음 (▲ 아래, ▼ 위)
+  if(S.flame&&rot&&S.mode==='drive'&&D.a!==0){
+    const fs=20*(0.9+0.2*Math.random()); const fd=D.a>0?1:-1;
+    ctx.save(); ctx.translate(sx,y+fd*(size*(ic.img?0.85:0.55)+fs*0.35)); if(fd>0) ctx.rotate(Math.PI);
     ctx.font=`${fs}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🔥',0,0); ctx.restore(); }
   ctx.save(); ctx.translate(sx,y);
