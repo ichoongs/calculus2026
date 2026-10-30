@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>자료로 함수 만들기</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --panel:#ffffff; --ink:#1d1f24; --sub:#5f6470; --line:#e2e0d8;
+    --accent:#2b4c7e; --warn-bg:#fff4e0; --warn:#8a5300; --hold:#c0392b; --out:#9aa0a8;
+    --c1:#2f6fd6; --c2:#e07b1f; --c3:#1f9d6b; --pt:#1d1f24;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:15px}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;
+    background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:-.3px}
+  header .sp{flex:1}
+  .ctl{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub)}
+  button,select{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;color:var(--ink);
+    border-radius:8px;padding:7px 12px;cursor:pointer;min-height:36px;touch-action:manipulation}
+  button:hover{border-color:#b9b6aa}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  main{display:grid;grid-template-columns:340px 1fr;gap:14px;padding:14px 16px;max-width:1400px;margin:0 auto}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .card h2{font-size:14px;margin:0 0 8px;font-weight:700}
+  .hint{font-size:12px;color:var(--sub);line-height:1.55;margin:6px 0 0}
+  .vars{display:grid;grid-template-columns:auto 56px 1fr;gap:6px 8px;align-items:center;font-size:13px}
+  .vars label{color:var(--sub)}
+  input[type=text]{font:inherit;font-size:14px;width:100%;padding:7px 8px;border:1px solid var(--line);
+    border-radius:7px;background:#fff;min-width:0}
+  input[type=text]:focus{outline:2px solid #b8c9e6;border-color:var(--accent)}
+  input.bad{border-color:#d9534f;background:#fff5f5}
+  table.data{width:100%;border-collapse:collapse;font-size:13px}
+  table.data th{color:var(--sub);font-weight:600;text-align:left;padding:4px 4px}
+  table.data td{padding:3px 4px}
+  table.data td.n{color:var(--sub);width:42px;font-size:12px;white-space:nowrap}
+  table.data .u{width:62px;text-align:center}
+  .role{width:58px;min-height:34px;padding:4px 0;font-size:13px;font-weight:600;border-radius:8px}
+  .role.use{background:#eef1f6;color:var(--accent);border-color:#cfd8e6}
+  .role.hold{background:#fdecea;color:var(--hold);border-color:#f0b8b0}
+  .role.out{background:#f1f1ef;color:var(--out);border-color:#ddd;text-decoration:line-through}
+  table.data tr.hold input[type=text]{border-style:dashed;color:var(--hold)}
+  table.data tr.out input[type=text]{background:#f4f3ef;color:var(--out)}
+  .roles-help{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;font-size:12px;color:var(--sub);margin-top:8px;line-height:1.45}
+  .roles-help b{font-weight:700}
+  table.res tr.hold td{color:var(--hold)}
+  table.res tr.out td{color:var(--out)}
+  .tag{font-size:10px;border-radius:5px;padding:1px 5px;margin-left:3px;vertical-align:middle}
+  .tag.hold{background:#fdecea;color:var(--hold)} .tag.out{background:#f1f1ef;color:var(--out)}
+  .holdm{margin-top:4px;color:var(--hold)} .holdm b{color:var(--hold)}
+  .right{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .graphwrap{position:relative;height:min(46vh,420px);min-height:260px}
+  canvas#g{width:100%;height:100%;display:block}
+  .legend{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:6px}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .fits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .fit{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;cursor:pointer;
+    transition:border-color .15s;min-width:0;touch-action:manipulation}
+  .fit.sel{border-color:var(--k);box-shadow:0 0 0 2px color-mix(in srgb,var(--k) 20%,transparent)}
+  .fit.off{opacity:.45;cursor:default}
+  .fit .top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .fit .dot{width:10px;height:10px;border-radius:50%;background:var(--k)}
+  .fit .name{font-weight:700;font-size:14px}
+  .fit .pick{margin-left:auto;font-size:11px;color:var(--sub)}
+  .fit.sel .pick{color:var(--k);font-weight:700}
+  .fit .badge{font-size:11px;background:#eef1f6;color:var(--accent);padding:2px 6px;border-radius:6px}
+  .eq{font-family:"Cambria Math","Times New Roman",serif;font-size:16px;line-height:1.4;word-break:break-word;margin:4px 0 8px}
+  .metrics{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub)}
+  .metrics b{color:var(--ink);font-size:14px}
+  .warn{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.5}
+  .warn:empty{display:none}
+  .lower{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;align-items:start}
+  .stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+  table.res{width:100%;border-collapse:collapse;font-size:13px}
+  table.res th,table.res td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:right}
+  table.res th:first-child,table.res td:first-child{text-align:left}
+  table.res th{color:var(--sub);font-weight:600}
+  .calc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
+  .calc input{width:110px}
+  .calc .out{font-family:"Cambria Math","Times New Roman",serif;font-size:17px}
+  .report{font-size:13px;line-height:1.65}
+  .report .eq{font-size:15px;margin:2px 0 6px}
+  .report ol{margin:6px 0 0;padding-left:18px}
+  .report li{margin:3px 0}
+  .muted{color:var(--sub)}
+  .row-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .demo{display:none}
+  body.is-demo .demo{display:flex}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(20,22,28,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+  .modal.on{display:flex}
+  .modal .box{background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:92vh;overflow:auto;padding:14px}
+  .modal img{width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block;-webkit-touch-callout:default}
+  .modal textarea{width:100%;font-size:16px;padding:8px;border:1px solid var(--line);border-radius:8px;min-height:70px}
+  .modal p{font-size:13px;color:var(--sub);line-height:1.55;margin:8px 0}
+  @media (max-width: 900px){
+    header{position:static}
+    main{grid-template-columns:1fr;padding:12px}
+    .fits{grid-template-columns:1fr}
+    .lower{grid-template-columns:1fr}
+    input[type=text],select{font-size:16px}   /* iOS: 16px 미만이면 입력할 때 화면이 확대됨 */
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>자료로 함수 만들기</h1>
+  <span class="sp"></span>
+  <span class="ctl demo">예시
+    <button data-preset="elev">엘리베이터</button>
+    <button data-preset="pot">도자기</button>
+  </span>
+  <span class="ctl">계수
+    <select id="sf" aria-label="계수 자릿수">
+      <option value="2">유효숫자 2자리</option>
+      <option value="3" selected>유효숫자 3자리</option>
+      <option value="4">유효숫자 4자리</option>
+    </select>
+  </span>
+  <button id="reset">초기화</button>
+</header>
+
+<main>
+  <section class="stack">
+    <div class="card">
+      <h2>① 변수 정하기</h2>
+      <div class="vars">
+        <span></span><label>문자</label><label>뜻, 단위</label>
+        <label>기준이 되는 양</label><input type="text" id="xv" maxlength="2" autocapitalize="off" autocomplete="off"><input type="text" id="xm" placeholder="예: 출발 후 시간, 초" autocomplete="off">
+        <label>변하는 양</label><input type="text" id="fn" maxlength="2" autocapitalize="off" autocomplete="off"><input type="text" id="ym" placeholder="예: 높이, m" autocomplete="off">
+      </div>
+      <p class="hint">문자: 위는 변수(x, t …), 아래는 함수 이름(f, h …). 뜻과 단위는 쉼표로 구분해 쓰세요.</p>
+    </div>
+    <div class="card">
+      <h2>② 자료 입력 (5~7개)</h2>
+      <table class="data">
+        <thead><tr><th></th><th id="thx">x</th><th id="thy">y</th><th class="u">역할</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="row-btns"><button id="neg" type="button">± 부호 바꾸기</button></div>
+      <div class="roles-help">
+        <b style="color:var(--accent)">사용</b><span>함수를 만드는 데 쓰는 점</span>
+        <b style="color:var(--hold)">확인</b><span>함수를 만들 때 빼 두고, 함수가 잘 맞히는지 시험하는 점 (10번)</span>
+        <b style="color:var(--out)">제외</b><span>함수로 나타낼 범위 밖의 점 (예: 가속이 끝난 뒤 구간)</span>
+      </div>
+      <p class="hint">역할 버튼을 누를 때마다 사용 → 확인 → 제외 순서로 바뀌어요. 음수는 칸을 누른 뒤 ‘± 부호 바꾸기’를 누르세요.</p>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="card">
+      <div class="graphwrap"><canvas id="g"></canvas></div>
+      <div class="legend">
+        <span><i style="background:var(--pt);width:9px;height:9px;border-radius:50%"></i>사용한 점</span>
+        <span><i style="background:#fff;border:2.5px solid var(--hold);width:10px;height:10px;border-radius:50%"></i>확인용 점</span>
+        <span><i style="background:#fff;border:2px solid var(--out);width:9px;height:9px;border-radius:50%"></i>제외한 점</span>
+        <span><i style="background:var(--c1)"></i>1차</span>
+        <span><i style="background:var(--c2)"></i>2차</span>
+        <span><i style="background:var(--c3)"></i>3차</span>
+        <span>실선: 함수를 만든 범위 · 점선: 범위 밖</span>
+      </div>
+    </div>
+
+    <div class="fits" id="fits"></div>
+    <div class="warn" id="warn"></div>
+
+    <div class="lower">
+      <div class="stack">
+        <div class="card">
+          <h2>함숫값 계산</h2>
+          <div class="calc" id="calc"></div>
+          <p class="hint" id="calchint">7번 극값, 8번 비교, 10번 확인용 점 계산에 쓰세요. 극대·극소가 되는 위치는 도함수로 직접 찾아야 해요.</p>
+        </div>
+        <div class="card">
+          <h2 id="restitle">점별 오차</h2>
+          <div id="res"></div>
+        </div>
+      </div>
+      <div class="card report">
+        <h2>보고서에 옮겨 쓰기</h2>
+        <div id="rep"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="box">
+    <div id="mbody"></div>
+    <div class="row-btns" id="mbtns"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const N = 7;
+const COLORS = {1:'#2f6fd6',2:'#e07b1f',3:'#1f9d6b'};
+const SUP = {2:'²',3:'³'};
+const KEY = 'calc2026-polyfit-v2';
+const NEXT = {use:'hold', hold:'out', out:'use'};
+const LABEL = {use:'사용', hold:'확인', out:'제외'};
+const isDemo = new URLSearchParams(location.search).has('demo');
+if(isDemo) document.body.classList.add('is-demo');
+
+// 시연용 가상 자료: 보고서 예1·예2의 예시 함수에서 만든 값 (실제 측정값 아님)
+const PRESETS = {
+  elev:{xv:'t',fn:'h',xm:'출발 후 시간, 초',ym:'높이, m',
+    rows:[[0,0],[2,2.1],[4,7.9],[6,18.1],[8,32.0],[11,59.8],[13,80.1]]},
+  pot:{xv:'x',fn:'f',xm:'바닥에서의 높이, cm',ym:'반지름, cm',
+    rows:[[0,8.1],[7,15.6],[14,18.2],[20,17.4],[27,15.6],[33,14.2],[40,15.1]]}
+};
+
+const fresh = () => ({xv:'x',fn:'f',xm:'',ym:'',rows:Array.from({length:N},()=>['','']),role:new Array(N).fill('use'),sel:null,sf:3,calcX:''});
+let state = fresh();
+try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && Array.isArray(s.rows)) state = Object.assign(state,s); }catch(e){}
+if(!Array.isArray(state.role) || state.role.length!==N) state.role=new Array(N).fill('use');
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+const $ = id => document.getElementById(id);
+const tbody = $('rows');
+let lastFocus = null;
+
+// ---------- inputs ----------
+function buildRows(){
+  tbody.innerHTML = '';
+  for(let i=0;i<N;i++){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="n">${i+1}${i>=5?'<br>선택':''}</td>
+      <td><input type="text" inputmode="decimal" autocomplete="off" data-i="${i}" data-j="0"></td>
+      <td><input type="text" inputmode="decimal" autocomplete="off" data-i="${i}" data-j="1"></td>
+      <td class="u"><button type="button" class="role" data-r="${i}"></button></td>`;
+    tbody.appendChild(tr);
+  }
+  tbody.querySelectorAll('.role').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.r; state.role[i]=NEXT[state.role[i]]||'use'; update(); }));
+  tbody.querySelectorAll('input[type=text]').forEach(inp=>{
+    inp.value = state.rows[inp.dataset.i][inp.dataset.j];
+    inp.addEventListener('focus',()=>{ lastFocus=inp; });
+    inp.addEventListener('input', ()=>{ state.rows[inp.dataset.i][inp.dataset.j] = inp.value.trim(); update(); });
+    inp.addEventListener('paste', e=>{
+      const t = (e.clipboardData||window.clipboardData).getData('text');
+      if(!/[\t\n]/.test(t)) return;
+      e.preventDefault();
+      const lines = t.trim().split(/\r?\n/);
+      let i = +inp.dataset.i;
+      for(const ln of lines){
+        if(i>=N) break;
+        const parts = ln.split(/\t|,(?=\s*-?\d)|\s{2,}/).map(s=>s.trim());
+        if(+inp.dataset.j===0){ state.rows[i][0]=parts[0]||''; if(parts.length>1) state.rows[i][1]=parts[1]; }
+        else state.rows[i][1]=parts[0]||'';
+        i++;
+      }
+      buildRows(); update();
+    });
+  });
+}
+// 휴대폰 숫자 키패드에는 '-'가 없는 경우가 많아 부호 버튼을 둔다
+$('neg').addEventListener('pointerdown',e=>e.preventDefault()); // 입력칸 포커스 유지
+$('neg').addEventListener('click',()=>{
+  const inp = lastFocus; if(!inp) return;
+  let v = inp.value.trim();
+  v = v.startsWith('-')||v.startsWith('−') ? v.slice(1) : '-'+v;
+  inp.value = v; state.rows[inp.dataset.i][inp.dataset.j]=v; update(); inp.focus();
+});
+function bindText(id,key){
+  const el=$(id); el.value=state[key];
+  el.addEventListener('input',()=>{state[key]=el.value.trim(); update();});
+}
+bindText('xv','xv'); bindText('fn','fn'); bindText('xm','xm'); bindText('ym','ym');
+$('sf').value = String(state.sf);
+$('sf').addEventListener('change',e=>{state.sf=+e.target.value; update();});
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  const p = PRESETS[b.dataset.preset];
+  Object.assign(state,{xv:p.xv,fn:p.fn,xm:p.xm,ym:p.ym,sel:null,calcX:'',role:new Array(N).fill('use')});
+  state.rows = Array.from({length:N},(_,i)=> p.rows[i] ? p.rows[i].map(String) : ['','']);
+  ['xv','fn','xm','ym'].forEach(k=>$(k).value=state[k]);
+  buildRows(); update();
+}));
+// 초기화: 두 번 눌러야 실행
+let resetArm=null;
+$('reset').addEventListener('click',e=>{
+  const b=e.currentTarget;
+  const restore=()=>{ b.textContent='초기화'; b.style.borderColor=''; b.style.color=''; };
+  if(!resetArm){
+    b.textContent='한 번 더 누르면 초기화'; b.style.borderColor='#d9534f'; b.style.color='#c0392b';
+    resetArm=setTimeout(()=>{ resetArm=null; restore(); },2500); return;
+  }
+  clearTimeout(resetArm); resetArm=null; restore();
+  state=fresh(); try{ localStorage.removeItem(KEY); }catch(err){}
+  ['xv','fn','xm','ym'].forEach(k=>$(k).value=state[k]); $('sf').value='3';
+  buildRows(); update();
+});
+
+// ---------- modal ----------
+function openModal(html, buttons){
+  $('mbody').innerHTML = html; const mb=$('mbtns'); mb.innerHTML='';
+  (buttons||[]).forEach(([label,fn,primary])=>{ const b=document.createElement('button'); b.textContent=label; if(primary) b.className='primary'; b.onclick=fn; mb.appendChild(b); });
+  const c=document.createElement('button'); c.textContent='닫기'; c.onclick=closeModal; mb.appendChild(c);
+  $('modal').classList.add('on');
+}
+function closeModal(){ $('modal').classList.remove('on'); }
+$('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+
+// ---------- copy ----------
+function copyText(text,btn){
+  const done=()=>{ const t=btn.textContent; btn.textContent='복사됨 ✓'; setTimeout(()=>btn.textContent=t,1200); };
+  const manual=()=>{ // 인앱 브라우저 등에서 복사가 막힌 경우: 직접 선택해서 복사
+    openModal(`<p><b>자동 복사가 막혀 있어요.</b> 아래 글자를 길게 눌러 전체 선택 후 복사하세요.</p><textarea readonly>${text.replace(/</g,'&lt;')}</textarea>`);
+    const ta=$('mbody').querySelector('textarea'); ta.focus(); ta.select();
+  };
+  const fallback=()=>{ const ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0'; document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0,text.length); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); ok?done():manual(); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done,fallback); else fallback();
+}
+
+// ---------- math ----------
+const num = s => { if(s===''||s==null) return NaN; return Number(String(s).replace(/\s/g,'').replace(/−/g,'-').replace(/,/g,'.')); };
+function solve(A,b){
+  const n=b.length; A=A.map(r=>r.slice()); b=b.slice();
+  for(let c=0;c<n;c++){
+    let p=c; for(let r=c+1;r<n;r++) if(Math.abs(A[r][c])>Math.abs(A[p][c])) p=r;
+    if(Math.abs(A[p][c])<1e-12) return null;
+    [A[c],A[p]]=[A[p],A[c]]; [b[c],b[p]]=[b[p],b[c]];
+    for(let r=c+1;r<n;r++){ const f=A[r][c]/A[c][c]; for(let k=c;k<n;k++) A[r][k]-=f*A[c][k]; b[r]-=f*b[c]; }
+  }
+  const x=new Array(n).fill(0);
+  for(let r=n-1;r>=0;r--){ let s=b[r]; for(let k=r+1;k<n;k++) s-=A[r][k]*x[k]; x[r]=s/A[r][r]; }
+  return x;
+}
+function binom(n,k){ let r=1; for(let i=1;i<=k;i++) r=r*(n-k+i)/i; return r; }
+// 최소제곱: u=(x-m)/s 로 바꿔 맞춘 뒤 x의 거듭제곱으로 되돌림 (오름차순 계수)
+function fit(xs,ys,d){
+  const m = xs.reduce((a,b)=>a+b,0)/xs.length;
+  const s = (Math.max(...xs)-Math.min(...xs))/2 || 1;
+  const us = xs.map(x=>(x-m)/s);
+  const A = Array.from({length:d+1},()=>new Array(d+1).fill(0)), b=new Array(d+1).fill(0);
+  us.forEach((u,i)=>{ for(let r=0;r<=d;r++){ b[r]+=Math.pow(u,r)*ys[i]; for(let c=0;c<=d;c++) A[r][c]+=Math.pow(u,r+c); } });
+  const c = solve(A,b); if(!c) return null;
+  const out = new Array(d+1).fill(0);
+  for(let k=0;k<=d;k++) for(let j=0;j<=k;j++) out[j] += c[k]/Math.pow(s,k)*binom(k,j)*Math.pow(-m,k-j);
+  return out;
+}
+const evalP = (c,x) => c.reduceRight((acc,a)=>acc*x+a,0);
+function roundSF(v,sf){ if(v===0||!isFinite(v)) return 0; return Number(v.toPrecision(sf)); }
+function fmtNum(v,maxSig=6){ if(v===0) return '0'; return Math.abs(v).toLocaleString('en-US',{maximumSignificantDigits:maxSig,useGrouping:false}); }
+function fmtVal(v){
+  if(!isFinite(v)) return '-';
+  const a=Math.abs(v); const r = a===0?0: a>=100? Number(v.toFixed(1)): a>=1? Number(v.toFixed(2)): Number(v.toPrecision(3));
+  return (r<0?'−':'') + fmtNum(Math.abs(r),8);
+}
+function eqString(c,xv){
+  const terms=[];
+  for(let k=c.length-1;k>=0;k--){
+    const a=c[k]; if(a===0) continue; const abs=Math.abs(a);
+    terms.push({neg:a<0, body: k===0 ? fmtNum(abs) : ((abs===1?'':fmtNum(abs)) + xv + (k>1?SUP[k]:''))});
+  }
+  if(!terms.length) return '0';
+  return terms.map((t,i)=> i===0 ? (t.neg?'−':'')+t.body : (t.neg?' − ':' + ')+t.body).join('');
+}
+function eqHwp(c,xv){
+  const terms=[];
+  for(let k=c.length-1;k>=0;k--){
+    const a=c[k]; if(a===0) continue; const abs=Math.abs(a);
+    const body = k===0 ? fmtNum(abs) : ((abs===1?'':fmtNum(abs)) + xv + (k>1?'^'+k:''));
+    terms.push((terms.length? (a<0?' - ':' + ') : (a<0?'-':'')) + body);
+  }
+  return terms.join('') || '0';
+}
+const U = u => u ? ' '+u : '';
+
+// ---------- graph ----------
+function niceStep(range,target){ const raw=range/target, p=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/p; return (f<1.5?1:f<3?2:f<7?5:10)*p; }
+function draw(ctx,W,H,opt){
+  const {pts,fits,sel,onlySel,title,xlab,ylab,legend} = Object.assign({onlySel:false,title:'',legend:false},opt);
+  const big = W>=1000, fs = big?1.35:1;
+  ctx.clearRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  const padL=58*fs, padR=18*fs, padT= title?52*fs:16, padB=(legend?74:46)*fs;
+  if(!pts.length){ ctx.fillStyle='#8a8f99'; ctx.font='15px sans-serif'; ctx.textAlign='center'; ctx.fillText('자료를 넣으면 그래프가 나타나요.',W/2,H/2); return; }
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+  const ins=pts.filter(p=>p[2]==='use').map(p=>p[0]);
+  let x0=Math.min(...xs), x1=Math.max(...xs); if(x0===x1){x0-=1;x1+=1;}
+  const xpad=(x1-x0)*0.08, X0=x0-xpad, X1=x1+xpad;
+  const s0=ins.length?Math.min(...ins):x0, s1=ins.length?Math.max(...ins):x1;
+  let y0=Math.min(...ys), y1=Math.max(...ys);
+  const shown=[1,2,3].filter(d=>fits[d] && (!onlySel || d===sel));
+  shown.forEach(d=>{ for(let i=0;i<=60;i++){ const x=s0+(s1-s0)*i/60, y=evalP(fits[d].c,x); if(isFinite(y)){ y0=Math.min(y0,y); y1=Math.max(y1,y);} } });
+  if(y0===y1){y0-=1;y1+=1;}
+  const ypad=(y1-y0)*0.12, Y0=y0-ypad, Y1=y1+ypad;
+  const px=x=>padL+(x-X0)/(X1-X0)*(W-padL-padR);
+  const py=y=>H-padB-(y-Y0)/(Y1-Y0)*(H-padT-padB);
+  ctx.font=`${12*fs}px sans-serif`; ctx.fillStyle='#5f6470'; ctx.strokeStyle='#eceae3'; ctx.lineWidth=1;
+  const sx=niceStep(X1-X0,Math.max(3,Math.min(10,(W-padL-padR)/(70*fs)))), sy=niceStep(Y1-Y0,Math.max(4,Math.min(8,(H-padT-padB)/(50*fs))));
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let v=Math.ceil(X0/sx)*sx; v<=X1+1e-9; v+=sx){ const X=px(v); ctx.beginPath(); ctx.moveTo(X,padT); ctx.lineTo(X,H-padB); ctx.stroke(); ctx.fillText(fmtVal(+v.toPrecision(10)),X,H-padB+6); }
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let v=Math.ceil(Y0/sy)*sy; v<=Y1+1e-9; v+=sy){ const Y=py(v); ctx.beginPath(); ctx.moveTo(padL,Y); ctx.lineTo(W-padR,Y); ctx.stroke(); ctx.fillText(fmtVal(+v.toPrecision(10)),padL-6,Y); }
+  ctx.strokeStyle='#b9b6aa'; ctx.strokeRect(padL,padT,W-padL-padR,H-padT-padB);
+  ctx.fillStyle='#1d1f24'; ctx.font=`${13*fs}px sans-serif`; ctx.textAlign='right'; ctx.textBaseline='top';
+  ctx.fillText(xlab,W-padR,H-padB+24*fs);
+  ctx.textAlign='left'; ctx.fillText(ylab,padL+4,padT+4);
+  ctx.save(); ctx.beginPath(); ctx.rect(padL,padT,W-padL-padR,H-padT-padB); ctx.clip();
+  shown.slice().sort((a,b)=>(a===sel)-(b===sel)).forEach(d=>{
+    const c=fits[d].c, isSel=(d===sel);
+    ctx.strokeStyle=COLORS[d]; ctx.globalAlpha=(sel&&!isSel)?0.3:1; ctx.lineWidth=(isSel?3.2:2)*fs;
+    const seg=(a,b,dash)=>{ ctx.setLineDash(dash); ctx.beginPath(); for(let i=0;i<=120;i++){ const x=a+(b-a)*i/120, X=px(x), Y=py(evalP(c,x)); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);} ctx.stroke(); };
+    seg(X0,s0,[5*fs,5*fs]); seg(s0,s1,[]); seg(s1,X1,[5*fs,5*fs]);
+  });
+  ctx.setLineDash([]); ctx.globalAlpha=1; ctx.restore();
+  const dot=(X,Y,role)=>{ ctx.beginPath(); ctx.arc(X,Y,(role==='out'?4.5:5.5)*fs,0,Math.PI*2);
+    if(role==='hold'){ ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle='#c0392b'; ctx.lineWidth=2.5*fs; ctx.stroke(); }
+    else if(role==='out'){ ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle='#9aa0a8'; ctx.lineWidth=2*fs; ctx.stroke(); }
+    else{ ctx.fillStyle='#1d1f24'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); } };
+  pts.forEach(p=>dot(px(p[0]),py(p[1]),p[2]));
+  if(title){ ctx.fillStyle='#1d1f24'; ctx.font=`${20*fs}px "Cambria Math","Times New Roman",serif`; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(title,padL,14*fs); }
+  if(legend){
+    const items=[['use','사용한 점']]; if(pts.some(p=>p[2]==='hold')) items.push(['hold','확인용 점(함수를 만들 때 뺀 점)']); if(pts.some(p=>p[2]==='out')) items.push(['out','제외한 점(범위 밖)']);
+    let X=padL, Y=H-22*fs; ctx.font=`${13*fs}px sans-serif`; ctx.textBaseline='middle'; ctx.textAlign='left';
+    items.forEach(([r,t])=>{ dot(X+6*fs,Y,r); ctx.fillStyle='#1d1f24'; ctx.fillText(t,X+16*fs,Y); X+=ctx.measureText(t).width+44*fs; });
+    ctx.strokeStyle=COLORS[sel]||'#1f9d6b'; ctx.lineWidth=3*fs; ctx.beginPath(); ctx.moveTo(X,Y); ctx.lineTo(X+24*fs,Y); ctx.stroke();
+    ctx.fillStyle='#1d1f24'; ctx.fillText('근사 함수 (점선: 자료 범위 밖)',X+32*fs,Y);
+  }
+}
+const cv=$('g'); let last=null;
+function render(){
+  if(!last) return;
+  const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); draw(ctx,r.width,r.height,last);
+}
+window.addEventListener('resize',render);
+window.addEventListener('orientationchange',()=>setTimeout(render,200));
+
+// ---------- update ----------
+const names={1:'1차',2:'2차',3:'3차'};
+let lastFit=null, cur=null;
+function update(){
+  save();
+  const xv = state.xv || 'x', fn = state.fn || 'f';
+  const [xn,xu]=splitMeaning(state.xm), [yn,yu]=splitMeaning(state.ym);
+  $('thx').textContent = xv; $('thy').textContent = `${fn}(${xv})`;
+  const pts=[]; let bad=false;
+  tbody.querySelectorAll('tr').forEach((tr,i)=>{
+    const [ix,iy]=tr.querySelectorAll('input[type=text]');
+    const role=state.role[i]||'use';
+    tr.className=role; const rb=tr.querySelector('.role'); rb.className='role '+role; rb.textContent=LABEL[role];
+    const a=state.rows[i][0], b=state.rows[i][1], vx=num(a), vy=num(b);
+    const bx=a!==''&&!isFinite(vx), by=b!==''&&!isFinite(vy);
+    ix.classList.toggle('bad',bx||(a===''&&b!=='')); iy.classList.toggle('bad',by||(b===''&&a!==''));
+    if(bx||by) bad=true;
+    if(isFinite(vx)&&isFinite(vy)&&a!==''&&b!=='') pts.push([vx,vy,role]);
+  });
+  const inPts=pts.filter(p=>p[2]==='use'), holdPts=pts.filter(p=>p[2]==='hold'), outPts=pts.filter(p=>p[2]==='out');
+  const xs=inPts.map(p=>p[0]), ys=inPts.map(p=>p[1]);
+  const distinct=new Set(xs).size, fits={}, warns=[];
+  for(const d of [1,2,3]){
+    if(distinct<d+1){ fits[d]=null; continue; }
+    const exact=fit(xs,ys,d); if(!exact){ fits[d]=null; continue; }
+    // 부동소수점 찌꺼기(예: 0.00000000000000233) 제거: 자료 범위에서 기여가 아주 작은 항은 0으로
+    const xmax=Math.max(...xs.map(Math.abs))||1, ysc=(Math.max(...ys)-Math.min(...ys))||Math.max(...ys.map(Math.abs))||1;
+    exact.forEach((v,k)=>{ if(Math.abs(v)*Math.pow(xmax,k) < 1e-9*ysc) exact[k]=0; });
+    const c=exact.map(v=>roundSF(v,state.sf));
+    const res=inPts.map(p=>p[1]-evalP(c,p[0]));
+    const rmse=Math.sqrt(res.reduce((a,r)=>a+r*r,0)/res.length), maxe=Math.max(...res.map(Math.abs));
+    const hold=holdPts.length? Math.max(...holdPts.map(p=>Math.abs(p[1]-evalP(c,p[0])))) : null;
+    let drift=0; const a0=Math.min(...xs), a1=Math.max(...xs);
+    for(let i=0;i<=50;i++){ const x=a0+(a1-a0)*i/50; drift=Math.max(drift,Math.abs(evalP(c,x)-evalP(exact,x))); }
+    fits[d]={c,res,rmse,maxe,hold,drift,interp:distinct===d+1};
+  }
+  if(state.sel && !fits[state.sel]) state.sel=null;
+  const sel=state.sel;
+
+  if(bad) warns.push('숫자가 아닌 칸이 있어요(빨간 칸). 단위는 표 안이 아니라 ① 칸에 써 주세요.');
+  if(pts.length>0 && pts.length<5) warns.push(`자료가 ${pts.length}개예요. 보고서에는 5개 이상이 필요해요.`);
+  if(holdPts.length && inPts.length<4) warns.push(`함수를 만드는 데 쓰는 점이 ${inPts.length}개뿐이에요. 확인용 점은 1개 정도가 적당해요.`);
+  if(holdPts.length>2) warns.push('확인용 점이 너무 많아요. 1개 정도면 충분해요.');
+  if(inPts.length && distinct<inPts.length) warns.push(`${xv} 값이 같은 점이 있어요. 잘못 쓴 건 아닌지 확인하세요.`);
+  const yr=ys.length?(Math.max(...ys)-Math.min(...ys))||1:1, check=sel?[sel]:[1,2,3];
+  const driftBad=check.filter(d=>fits[d]&&fits[d].drift>0.02*yr);
+  if(driftBad.length) warns.push(`계수를 반올림해서 ${driftBad.map(d=>d+'차').join('·')} 그래프가 원래 근사식과 눈에 띄게 달라졌어요. 계수 자릿수를 늘리거나 ${xv}의 단위를 바꿔 보세요.`);
+  if(check.some(d=>fits[d]&&fits[d].c.some(v=>v!==0&&Math.abs(v)<1e-4))) warns.push(`계수가 0.0001보다 작아요. ${xv}의 단위를 바꾸면(예: 초 → 10초, m → 10 m) 계산이 훨씬 쉬워져요.`);
+  $('warn').innerHTML=warns.map(w=>'⚠ '+w).join('<br>');
+
+  // 카드
+  const fe=$('fits'); fe.innerHTML='';
+  for(const d of [1,2,3]){
+    const f=fits[d], el=document.createElement('div');
+    el.className='fit'+(sel===d?' sel':'')+(f?'':' off'); el.style.setProperty('--k',COLORS[d]);
+    if(!f){
+      el.innerHTML=`<div class="top"><span class="dot"></span><span class="name">${names[d]}</span></div><div class="muted" style="font-size:13px">사용하는 점 중 ${xv} 값이 서로 다른 점이 ${d+1}개 이상 있어야 해요.</div>`;
+    }else{
+      el.innerHTML=`<div class="top"><span class="dot"></span><span class="name">${names[d]}</span>${f.interp?'<span class="badge">모든 점을 지남</span>':''}<span class="pick">${sel===d?'✓ 선택함':'눌러서 선택'}</span></div>
+        <div class="eq">${fn}(${xv}) = ${eqString(f.c,xv)}</div>
+        <div class="metrics"><span>평균 오차 <b>${fmtVal(f.rmse)}</b>${U(yu)}</span><span>가장 큰 오차 <b>${fmtVal(f.maxe)}</b>${U(yu)}</span></div>
+        ${f.hold!=null?`<div class="metrics holdm"><span>확인용 점 차이 <b>${fmtVal(f.hold)}</b>${U(yu)}</span></div>`:''}`;
+      el.addEventListener('click',()=>{ state.sel=state.sel===d?null:d; update(); });
+    }
+    fe.appendChild(el);
+  }
+
+  // 함숫값 계산
+  cur = sel&&fits[sel] ? {c:fits[sel].c, lo:Math.min(...xs), hi:Math.max(...xs), xv, fn, yu} : null;
+  const calc=$('calc');
+  if(cur){
+    if(!calc.querySelector('input')){
+      calc.innerHTML=`<span class="v"></span><input type="text" inputmode="decimal" id="cx" autocomplete="off" placeholder="값 입력"><span class="out" id="cout"></span>`;
+      const cx=$('cx'); cx.value=state.calcX||''; cx.addEventListener('focus',()=>{lastFocus=null;});
+      cx.addEventListener('input',()=>{ state.calcX=cx.value.trim(); save(); calcOut(); });
+    }
+    calc.querySelector('.v').textContent=`${xv} =`;
+    calcOut();
+  }else{ calc.innerHTML='<span class="muted" style="font-size:13px">위에서 차수를 고르면 계산할 수 있어요.</span>'; }
+
+  // 점별 오차
+  const re=$('res');
+  if(cur){
+    const f=fits[sel];
+    $('restitle').textContent=`점별 오차 (${names[sel]})`;
+    const tag={hold:' <span class="tag hold">확인용</span>',out:' <span class="tag out">제외</span>',use:''};
+    re.innerHTML=`<table class="res"><thead><tr><th>${xv}</th><th>측정값</th><th>${fn}(${xv})</th><th>차이</th></tr></thead><tbody>${
+      pts.map(p=>{ const v=evalP(f.c,p[0]); return p[2]==='out'
+        ? `<tr class="out"><td>${fmtVal(p[0])}${tag.out}</td><td>${fmtVal(p[1])}</td><td>-</td><td>-</td></tr>`
+        : `<tr class="${p[2]}"><td>${fmtVal(p[0])}${tag[p[2]]}</td><td>${fmtVal(p[1])}</td><td>${fmtVal(v)}</td><td>${fmtVal(p[1]-v)}</td></tr>`; }).join('')
+    }</tbody></table><p class="hint">차이 = 측정값 − 함숫값${yu?` (단위: ${yu})`:''}. ${holdPts.length
+      ? '확인용 점의 차이가 작으면, 함수가 만들 때 쓰지 않은 점도 잘 맞힌다는 뜻이에요.'
+      : '점 하나의 역할을 ‘확인’으로 바꾸면 함수가 그 점을 얼마나 잘 맞히는지 볼 수 있어요.'}</p>`;
+  }else{
+    $('restitle').textContent='점별 오차';
+    re.innerHTML='<p class="muted" style="font-size:13px;margin:0">위에서 차수를 하나 고르면 점마다 얼마나 어긋나는지 보여 줘요.</p>';
+  }
+
+  // 보고서 도움
+  const rep=$('rep');
+  if(cur){
+    const f=fits[sel], lo=fmtVal(cur.lo), hi=fmtVal(cur.hi);
+    lastFit={ plain:`${fn}(${xv}) = ${eqString(f.c,xv)} (${lo} ≤ ${xv} ≤ ${hi})`,
+      hwp:`${fn}(${xv}) = ${eqHwp(f.c,xv)} ~~ (${lo.replace('−','-')} LEQ ${xv} LEQ ${hi.replace('−','-')})` };
+    const h=holdPts[0], hv=h?evalP(f.c,h[0]):0;
+    rep.innerHTML=`
+      <div class="muted">5번 함수식과 범위</div>
+      <div class="eq">${fn}(${xv}) = ${eqString(f.c,xv)} &nbsp;(${lo} ≤ ${xv} ≤ ${hi})</div>
+      <div>${xn?`${xv}: ${xn}${xu?` (${xu})`:''}`:`<span class="muted">① 칸에 ${xv}의 뜻·단위를 쓰면 여기 함께 나와요.</span>`}${yn?`<br>${fn}(${xv}): ${yn}${yu?` (${yu})`:''}`:''}</div>
+      <div class="row-btns">
+        <button data-act="copy">식 복사</button>
+        <button data-act="hwp">한글 수식용 복사</button>
+        <button data-act="png" class="primary">그래프 이미지</button>
+      </div>
+      <ol>
+        <li><b>5번:</b> 왜 ${names[sel]}인지 한두 문장으로 쓰세요. 오차만이 아니라 그래프 모양이 실제 현상과 맞는지도 근거로 쓰세요.</li>
+        <li><b>5번:</b> 범위는 함수를 만든 구간(실선)까지만 쓰세요.${holdPts.length?' 확인용 점은 표의 순서 옆에 ☆로 표시하세요.':''}</li>
+        <li><b>6번:</b> 위 식의 계수를 그대로 써서 도함수를 직접 구하세요.</li>
+        <li><b>7·8번:</b> 도함수로 찾은 ${xv} 값을 ‘함숫값 계산’에 넣어 극댓값·극솟값을 구하고, 측정한 값 중 가장 큰(작은) 값과 비교하세요.</li>
+        ${h?`<li><b>10번:</b> “${xv} = ${fmtVal(h[0])}에서 함숫값은 ${fmtVal(hv)}${U(yu)}, 실제는 ${fmtVal(h[1])}${U(yu)}로 ${fmtVal(Math.abs(h[1]-hv))}${U(yu)}만큼 차이가 났다.”처럼 쓰세요.</li>`:''}
+      </ol>`;
+  }else{
+    lastFit=null;
+    rep.innerHTML=`<p style="margin:0">위의 카드 세 개를 비교하고 하나를 눌러 고르세요.</p>
+      <ol>
+        <li>차수를 올리면 평균 오차는 <b>항상 줄거나 같아요</b>. 오차가 가장 작다고 정답은 아니에요.</li>
+        <li>오차가 <b>크게</b> 줄어드는지, 곡선 모양이 실제 현상과 맞는지 함께 보세요.</li>
+        <li>‘모든 점을 지남’은 점 개수와 계수 개수가 같아서 생기는 결과예요. 잘 맞는다는 증거는 아니에요.</li>
+        <li>${holdPts.length?'<b>확인용 점 차이</b>는 함수를 만들 때 안 쓴 점을 얼마나 잘 맞히는지예요. 차수를 올린다고 꼭 줄지는 않아요.':'점 하나의 역할을 <b>확인</b>으로 바꿔 보세요. 함수가 처음 보는 점을 잘 맞히는지 시험할 수 있어요.'}</li>
+      </ol>`;
+  }
+  last={pts,fits,sel,xlab:xu?`${xv} (${xu})`:xv,ylab:yu?`${fn}(${xv}) (${yu})`:`${fn}(${xv})`};
+  render();
+}
+function calcOut(){
+  const o=$('cout'); if(!o||!cur) return;
+  const x=num(state.calcX);
+  if(state.calcX===''||!isFinite(x)){ o.textContent=''; $('calchint').textContent='7번 극값, 8번 비교, 10번 확인용 점 계산에 쓰세요. 극대·극소가 되는 위치는 도함수로 직접 찾아야 해요.'; return; }
+  o.textContent=`→ ${cur.fn}(${fmtVal(x)}) ≈ ${fmtVal(evalP(cur.c,x))}${U(cur.yu)}`;
+  $('calchint').textContent = (x<cur.lo||x>cur.hi) ? `⚠ 함수를 만든 범위(${fmtVal(cur.lo)} ~ ${fmtVal(cur.hi)}) 밖이라 믿기 어려운 값이에요.` : '함수를 만든 범위 안의 값이에요.';
+}
+function splitMeaning(s){ if(!s) return ['','']; const i=s.lastIndexOf(','); return i<0?[s.trim(),'']:[s.slice(0,i).trim(),s.slice(i+1).trim()]; }
+
+// ---------- 보고서 버튼 ----------
+$('rep').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b||!lastFit) return;
+  if(b.dataset.act==='copy') copyText(lastFit.plain,b);
+  else if(b.dataset.act==='hwp') copyText(lastFit.hwp,b);
+  else if(b.dataset.act==='png') makeImage();
+});
+function makeImage(){
+  if(!last||!last.sel) return;
+  const W=1200,H=820, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const xv=state.xv||'x', fn=state.fn||'f', f=last.fits[last.sel];
+  draw(c.getContext('2d'),W,H,Object.assign({},last,{onlySel:true,legend:true,title:`${fn}(${xv}) = ${eqString(f.c,xv)}`}));
+  const url=c.toDataURL('image/png'), name=`함수근사_${last.sel}차.png`;
+  const btns=[['내려받기',()=>{ const a=document.createElement('a'); a.download=name; a.href=url; document.body.appendChild(a); a.click(); a.remove(); },true]];
+  c.toBlob(blob=>{
+    let file=null; try{ file=new File([blob],name,{type:'image/png'}); }catch(e){}
+    if(file && navigator.canShare && navigator.canShare({files:[file]}))
+      btns.unshift(['공유·사진에 저장',()=>navigator.share({files:[file]}).catch(()=>{}),true]);
+    openModal(`<img src="${url}" alt="근사 함수 그래프">
+      <p><b>휴대폰·태블릿:</b> 그림을 길게 눌러 ‘사진에 저장’ 또는 ‘복사’를 고르세요. 카카오톡 등 앱 안에서 열었다면 ‘다른 브라우저로 열기’ 후 저장하면 잘 돼요.<br><b>컴퓨터:</b> ‘내려받기’를 누르세요.</p>`, btns);
+  },'image/png');
+}
+
+buildRows(); update();
+})();
+</script>
+</body>
+</html>
