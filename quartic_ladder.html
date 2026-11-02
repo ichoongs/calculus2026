@@ -1,0 +1,484 @@
+<title>사차함수 개형 사다리</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Nanum+Gothic:wght@400;700;800&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: 위쪽에 단계 표시줄(①→②→③), 왼쪽 큰 그래프, 오른쪽 단계별 패널.
+   다른 도구(회청·초록 칠판·청사진)와 구분되도록 자두색 사다리 + 청록 x축. */
+:root{
+  --bg:#f2f0f6; --surface:#fdfcff; --sunk:#ebe7f2; --ink:#2a1f3d; --muted:#6e6584; --line:#d8d2e4; --grid:#e8e3ef;
+  --axis:#0e8a7e; --curve:#2a1f3d; --deriv:#b2581c; --lad:#8a3b8f; --fold:#3b6fd1; --ok:#1f8a4c; --bad:#c23a3a;
+  --font-display:"Do Hyeon","Nanum Gothic",sans-serif;
+  --font-ui:"Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-math:"STIX Two Text","Times New Roman","Batang",serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#17121f; --surface:#211a2c; --sunk:#1b1525; --ink:#ece6f6; --muted:#a99fbd; --line:#3a3049; --grid:#2a2236;
+  --axis:#4fd1c1; --curve:#ece6f6; --deriv:#f0a060; --lad:#d58ad9; --fold:#7fb0ff; --ok:#6fd69a; --bad:#ff7d7d; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#17121f; --surface:#211a2c; --sunk:#1b1525; --ink:#ece6f6; --muted:#a99fbd; --line:#3a3049; --grid:#2a2236;
+  --axis:#4fd1c1; --curve:#ece6f6; --deriv:#f0a060; --lad:#d58ad9; --fold:#7fb0ff; --ok:#6fd69a; --bad:#ff7d7d; color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14.5px;box-sizing:border-box;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+*,*::before,*::after{box-sizing:inherit}
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-block:10px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+header h1{font-family:var(--font-display);font-weight:400;font-size:26px;margin:0 6px 0 0;letter-spacing:-.01em}
+.steps{display:flex;align-items:center;gap:4px;margin-right:auto}
+.step{display:flex;align-items:center;gap:7px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 12px 5px 6px;cursor:pointer;font-family:var(--font-ui);font-size:13.5px}
+.step .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);font-family:var(--font-display);font-size:16px;color:var(--muted)}
+.step[aria-current="step"]{border-color:var(--lad);color:var(--ink);font-weight:700}
+.step[aria-current="step"] .n{background:var(--lad);color:#fff}
+.step.done .n{background:var(--ok);color:#fff}
+.arrow{color:var(--muted);font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{font-family:var(--font-ui);border:0;background:transparent;color:var(--muted);padding:7px 12px;font-size:13px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:700}
+.seg .m{font-family:var(--font-math);font-size:15px}
+.btn{font-family:var(--font-ui);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:13.5px;cursor:pointer}
+.btn.go{background:var(--lad);border-color:var(--lad);color:#fff;font-weight:700}
+.btn[disabled]{opacity:.45;cursor:default}
+button:focus-visible{outline:2px solid var(--lad);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:12px;min-height:0}
+.stage{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:0}
+canvas#cv{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;left:8px;top:8px;right:8px;font-size:13px;color:var(--muted);pointer-events:none;line-height:1.45;background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:8px;padding:4px 6px}
+.hint b{color:var(--ink)}
+.side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+.side>*{flex-shrink:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.lbl{font-size:11.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.big{font-family:var(--font-display);font-size:24px;line-height:1.2}
+.shapes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.shape{display:flex;flex-direction:column;gap:3px;align-items:stretch;text-align:left;border:1.5px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);padding:7px 9px 8px;cursor:pointer;font-family:var(--font-ui)}
+.shape canvas{width:100%;aspect-ratio:1/0.55;display:block}
+.shape .t{font-size:12.5px;font-weight:700;line-height:1.3}
+.shape .s{font-size:11.5px;color:var(--muted);line-height:1.3}
+.shape[aria-pressed="true"]{border-color:var(--lad);box-shadow:0 0 0 2px color-mix(in srgb,var(--lad) 35%,transparent)}
+.shape.right{border-color:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 40%,transparent)}
+.shape.wrong{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 40%,transparent)}
+.shape.miss{border-style:dashed;border-color:var(--ok)}
+.shape[hidden]{display:none}
+.rrow{display:grid;grid-template-columns:auto minmax(0,1fr) 34px;gap:6px;align-items:center;margin-top:4px;padding-top:5px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--muted)}
+.rrow input{width:100%;accent-color:var(--lad)}
+.rrow output{font-size:11.5px;text-align:right;color:var(--ink)}
+.shape:not([aria-pressed="true"]) .rrow{display:none}
+.ctrl{display:flex;align-items:center;gap:10px;margin-top:8px}
+.ctrl label{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.ctrl input{flex:1;accent-color:var(--lad)}
+.ctrl output{font-family:var(--font-math);min-width:40px;text-align:right}
+.ladder{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.ladder li button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);font-family:var(--font-ui);font-size:13px;padding:5px 8px;border-radius:8px;cursor:pointer}
+.ladder li.lv button{background:var(--sunk)}
+.ladder li button .c{font-weight:800;color:var(--lad);white-space:nowrap}
+.ladder li.now button{border-color:var(--axis);box-shadow:0 0 0 2px color-mix(in srgb,var(--axis) 30%,transparent)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13.5px;margin-top:6px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.math{font-family:var(--font-math)} .math i,i{font-style:italic}
+.signs{font-family:var(--font-math);font-size:15px;letter-spacing:.04em}
+.q{font-size:15.5px;font-weight:700;line-height:1.5}
+.q .src{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
+.stagebar{display:flex;gap:6px;margin:8px 0 6px}
+.stagebar span{flex:1;text-align:center;font-size:12.5px;border-radius:8px;padding:4px;background:var(--sunk);color:var(--muted)}
+.stagebar span.on{background:var(--lad);color:#fff;font-weight:700}
+.stagebar span.ok{background:var(--ok);color:#fff}
+.fb{margin-top:8px;font-size:13.5px;line-height:1.5}
+.fb.ok{color:var(--ok)} .fb.no{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.score{font-size:12.5px;color:var(--muted);margin-left:auto}
+@media (max-width:1000px){ .main{grid-template-columns:minmax(0,1fr) 380px} .step .w{display:none} }
+@media (max-width:820px){
+  html,body{height:auto} .app{height:auto}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .stage{height:46vh;min-height:280px}
+  .side{overflow:visible}
+}
+@media (max-width:600px){
+  header h1{font-size:21px;flex:1 1 100%}
+  .steps{margin-right:0;flex:1 1 100%}
+  .step{padding:4px 9px 4px 4px;font-size:12.5px}
+  .seg button,.btn{padding:6px 9px;font-size:12.5px}
+  .stage{height:36vh;min-height:230px}
+  .shape canvas{aspect-ratio:1/0.36}
+  .shape .t{font-size:11.5px}
+  .card{padding:9px 10px}
+  .shape .s{display:none}
+}
+@media (max-height:500px) and (min-width:601px){
+  html,body{height:100%} .app{height:100%;gap:6px;padding-block:6px}
+  header h1{font-size:20px} .step .w{display:none}
+  .main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .stage{height:auto;min-height:0} .side{overflow-y:auto}
+  .shape .s{display:none}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>사차함수 개형 사다리</h1>
+    <nav class="steps" aria-label="단계">
+      <button class="step" id="st1" data-step="1"><span class="n">1</span><span class="w">개형 고르기</span></button><span class="arrow">→</span>
+      <button class="step" id="st2" data-step="2"><span class="n">2</span><span class="w">x축 높이</span></button><span class="arrow">→</span>
+      <button class="step" id="st3" data-step="3"><span class="n">3</span><span class="w">도전</span></button>
+    </nav>
+    <div class="seg" role="group" aria-label="최고차항의 부호" id="aSeg">
+      <button id="aPos" aria-pressed="true"><span class="m"><i>a</i> &gt; 0</span></button>
+      <button id="aNeg" aria-pressed="false"><span class="m"><i>a</i> &lt; 0</span></button>
+    </div>
+    <div class="seg" role="group" aria-label="보기">
+      <button id="vF" aria-pressed="true"><span class="m"><i>f</i></span></button>
+      <button id="vAbs" aria-pressed="false"><span class="m">|<i>f</i>|</span></button>
+    </div>
+    <button class="btn" id="bTheme">밝기</button>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <canvas id="cv" aria-label="사차함수 그래프"></canvas>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <aside class="side">
+      <!-- 1단계 -->
+      <section id="p1" class="stack">
+        <div class="card">
+          <div class="lbl">1단계 · f′(x) = 0의 근이 개형을 정한다</div>
+          <div class="shapes" id="shapes1"></div>
+        </div>
+        <div class="card" id="p1info"></div>
+        <div class="row"><button class="btn go" id="to2">2단계: x축 높이로 →</button></div>
+      </section>
+
+      <!-- 2단계 -->
+      <section id="p2" hidden>
+        <div class="card">
+          <div class="lbl">2단계 · 높이 사다리 — 그래프를 위아래로 끌거나 칸을 누르세요</div>
+          <ol class="ladder" id="ladder"></ol>
+        </div>
+        <div class="card" id="p2info" style="margin-top:10px"></div>
+        <div class="row"><button class="btn" id="back1">← 1단계</button><button class="btn go" id="to3">3단계: 도전 →</button></div>
+      </section>
+
+      <!-- 3단계 -->
+      <section id="p3" hidden>
+        <div class="card">
+          <div class="lbl">3단계 · 도전 <span id="qNo"></span></div>
+          <div class="q" id="qText"></div>
+          <div class="stagebar"><span id="sbA">A · 개형 고르기</span><span id="sbB">B · x축 높이 맞추기</span></div>
+          <div id="qA">
+            <div class="shapes" id="shapes3"></div>
+            <div class="row"><button class="btn go" id="checkA">A 확인</button><span class="score" id="score"></span></div>
+          </div>
+          <div id="qB" hidden>
+            <div class="shapes" id="shapes3b"></div>
+            <div class="row"><span style="font-size:12.5px;color:var(--muted)">그래프를 위아래로 끌어 조건에 맞추세요</span><button class="btn go" id="checkB">B 확인</button></div>
+          </div>
+          <div class="fb" id="fb"></div>
+          <div class="row"><button class="btn" id="nextQ">다음 문제</button></div>
+        </div>
+        <div class="card" id="p3info" style="margin-top:10px"></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d');
+
+/* ---------- 개형 정의 (계수: x⁴, x³, x², x, 상수) ---------- */
+const SH={
+  W:{t:'f′ = 0: 서로 다른 세 실근',s:'극소 · 극대 · 극소 (W형)',signs:'−  +  −  +',
+     coef:r=>[1,-(4/3)*(r-1),-2*r,0,0], crit:r=>[-1,0,r], view:r=>[-2.05,Math.max(r,1)+1.1]},
+  S:{t:'f′ = 0: 중근 + 단근',s:'평평한 점 + 극소 (어깨형)',signs:'−  −  +',
+     coef:()=>[1,-2,0,0,0], crit:()=>[0,1.5], view:()=>[-1.25,2.45]},
+  U:{t:'f′ = 0: 실근 하나 (나머지 허근)',s:'극소 하나 (U형)',signs:'−  +',
+     coef:()=>[1,1,1,0,0], crit:()=>[0], view:()=>[-1.75,1.25]},
+  Q:{t:'f′ = 0: 삼중근',s:'바닥이 평평한 U (x⁴형)',signs:'−  +',
+     coef:()=>[1,0,0,0,0], crit:()=>[0], view:()=>[-1.6,1.6]},
+};
+const ORDER=['W','S','U','Q'];
+const S={step:1, sh:'W', r:1.5, a:1, c:0, abs:false, qi:0, qStage:'A', pickA:new Set(), solved:0, tried:0, done:{1:false,2:false}};
+
+const P=(cs,x)=>cs.reduce((acc,k)=>acc*x+k,0);
+const D=cs=>{const n=cs.length-1;return cs.slice(0,-1).map((k,i)=>k*(n-i))};
+function model(sh=S.sh,r=S.r,a=S.a,c=S.c){
+  const d=SH[sh], F=d.coef(r), F1=D(F), F2=D(F1), F3=D(F2), xs=d.crit(r);
+  let s=1;
+  if(sh==='W'){const m=Math.min(...xs.map(x=>P(F,x)));s=-m/4} else if(sh==='S'){s=-P(F,1.5)/3}
+  const f=x=>a*P(F,x)/s+c, f1=x=>a*P(F1,x)/s, f2=x=>a*P(F2,x)/s, f3=x=>a*P(F3,x)/s;
+  return {f,f1,f2,f3,xs,view:d.view(r)};
+}
+let M=model();
+
+/* 근: 임계점에서 접하면 중복도 판정, 나머지는 부호 변화 */
+function rootsAt(y,m=M){
+  const out=[];
+  m.xs.forEach(x=>{ if(Math.abs(m.f(x)-y)<1e-9){ const k=Math.abs(m.f2(x))>1e-7?2:Math.abs(m.f3(x))>1e-7?3:4;
+      if(!out.some(o=>Math.abs(o.x-x)<1e-6)) out.push({x,m:k}); } });
+  const L=m.view[0]-4, R=m.view[1]+4, N=3000; let px=L, pv=m.f(L)-y;
+  for(let i=1;i<=N;i++){const x=L+(R-L)*i/N, v=m.f(x)-y;
+    if(pv*v<0){let lo=px,hi=x;for(let k=0;k<60;k++){const mid=(lo+hi)/2;if((m.f(lo)-y)*(m.f(mid)-y)<=0)hi=mid;else lo=mid}
+      const r=(lo+hi)/2; if(!out.some(o=>Math.abs(o.x-r)<2e-3)) out.push({x:r,m:1});}
+    px=x;pv=v;}
+  // 삼중근처럼 부호가 바뀌는 중복근은 부호 변화로도 잡히므로 중복 제거됨
+  return out.sort((p,q)=>p.x-q.x);
+}
+function critType(x,m=M){const v2=m.f2(x);if(v2>1e-7)return'min';if(v2<-1e-7)return'max';
+  if(Math.abs(m.f3(x))>1e-7)return'flat'; return S.a>0?'min':'max';}
+
+/* 사다리: 임계값 높이별로 묶고, 구간마다 교점 개수 */
+function ladder(m=M){
+  const lv=[];
+  m.xs.forEach(x=>{const y=m.f(x),t=critType(x,m);const g=lv.find(o=>Math.abs(o.y-y)<1e-9);if(g)g.items.push(t);else lv.push({y,items:[t]})});
+  lv.sort((p,q)=>q.y-p.y);
+  const mins=lv.filter(l=>l.items.includes('min')), maxs=lv.filter(l=>l.items.includes('max'));
+  lv.forEach(l=>{
+    const t=l.items;
+    if(t.length===2&&t[0]===t[1]) l.name='두 '+(t[0]==='min'?'극솟값':'극댓값');
+    else if(t[0]==='flat') l.name='평평한 점';
+    else if(t[0]==='min') l.name=mins.length>1?(l===mins[0]?'높은 극솟값':'낮은 극솟값'):'극솟값';
+    else l.name=maxs.length>1?(l===maxs[0]?'높은 극댓값':'낮은 극댓값'):'극댓값';
+  });
+  const rows=[];
+  const cnt=y=>rootsAt(y,m);
+  rows.push({kind:'gap',name:lv[0].name+' 높이보다 위',y:lv[0].y+1.2,lo:lv[0].y,hi:Infinity});
+  lv.forEach((l,i)=>{
+    rows.push({kind:'lv',name:l.name+' 높이',y:l.y,lo:l.y,hi:l.y});
+    const nx=lv[i+1];
+    rows.push(nx?{kind:'gap',name:nx.name+' ~ '+l.name+' 사이',y:(l.y+nx.y)/2,lo:nx.y,hi:l.y}:{kind:'gap',name:l.name+' 높이보다 아래',y:l.y-1.2,lo:-Infinity,hi:l.y});
+  });
+  rows.forEach(r=>{const rs=cnt(r.y);r.n=rs.length;r.mult=rs.filter(q=>q.m>1).map(q=>q.m)});
+  return {lv,rows};
+}
+function currentRow(L){ return L.rows.findIndex(r=> r.kind==='lv'?Math.abs(r.y)<1e-9 : (0>r.lo+1e-9&&0<r.hi-1e-9)); }
+const multName=k=>k===2?'중근':k===3?'삼중근':'사중근';
+const num=v=>{const a=Math.abs(v);const s=v<-5e-3?'−':'';if(Math.abs(a-Math.round(a))<5e-3)return s+Math.round(a);return s+(+a.toFixed(2))};
+
+/* ---------- 그리기 ---------- */
+let W=0,H=0,DPR=1,C={};
+function colors(){const cs=getComputedStyle(document.documentElement);['surface','ink','muted','line','grid','axis','curve','deriv','lad','fold','sunk','ok','bad'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim())}
+function line(x1,y1,x2,y2,col,w,dash){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function text(s,x,y,col,size=13,align='center',font='ui',bold=false){ctx.save();ctx.font=(bold?'700 ':'')+size+'px '+(font==='math'?'"STIX Two Text",serif':'"Nanum Gothic","Malgun Gothic",sans-serif');ctx.fillStyle=col;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore()}
+function dot(x,y,col,r=5){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=C.surface;ctx.stroke()}
+function ringDot(x,y,col,r=7){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=C.surface;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=col;ctx.stroke()}
+function plot(g,X,Y,x0,x1,top,bot,col,w,dash){ctx.save();ctx.beginPath();ctx.rect(0,top,W,bot-top);ctx.clip();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineJoin='round';ctx.setLineDash(dash||[]);ctx.beginPath();
+  const n=500;for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;const yy=Math.max(-4000,Math.min(4000,Y(g(x))));i?ctx.lineTo(X(x),yy):ctx.moveTo(X(x),yy)}ctx.stroke();ctx.restore()}
+
+const YV=[-7,7];
+let map=null; // 현재 큰 그래프의 좌표 변환 (끌기용)
+function drawMain(){
+  colors(); ctx.setTransform(DPR,0,0,DPR,0,0); ctx.fillStyle=C.surface; ctx.fillRect(0,0,W,H);
+  const showDeriv = S.step===1 || (S.step===3&&S.qStage==='A');
+  const showLad = !showDeriv;
+  const PL=12, PR=showLad?96:12, PT=46, PB=14;
+  const [x0,x1]=M.view;
+  const X=x=>PL+(x-x0)/(x1-x0)*(W-PL-PR);
+  let fTop=PT, fBot=H-PB;
+  if(showDeriv){
+    // 위: f′, 아래: f
+    const dTop=PT, dBot=PT+(H-PT-PB)*0.36; fTop=dBot+14;
+    const ca=Math.min(...M.xs)-0.55, cb=Math.max(...M.xs)+0.55;
+    let lo=Infinity,hi=-Infinity;for(let i=0;i<=200;i++){const v=M.f1(ca+(cb-ca)*i/200);lo=Math.min(lo,v);hi=Math.max(hi,v)}
+    const span=Math.max(Math.abs(lo),Math.abs(hi))*1.25||1;
+    const Yd=y=>dTop+(span-y)/(2*span)*(dBot-dTop);
+    ctx.fillStyle=C.sunk;ctx.globalAlpha=.5;ctx.fillRect(PL,dTop,W-PL-PR,dBot-dTop);ctx.globalAlpha=1;
+    line(PL,Yd(0),W-PR,Yd(0),C.muted,1.2);
+    plot(M.f1,X,Yd,x0,x1,dTop,dBot,C.deriv,2.6);
+    text("y = f′(x)",PL+8,dTop+12,C.deriv,13,'left','math');
+    // 부호 표시
+    const zs=M.xs.slice().sort((p,q)=>p-q), pts=[x0,...zs,x1];
+    for(let i=0;i<pts.length-1;i++){const xm=(pts[i]+pts[i+1])/2;const sgn=M.f1(xm)>0?'+':'−';text(sgn,X(xm),Yd(0)+(M.f1(xm)>0?-14:14),M.f1(xm)>0?C.ok:C.bad,18,'center','math',true)}
+    zs.forEach(z=>{dot(X(z),Yd(0),C.deriv,4.5);line(X(z),Yd(0),X(z),fBot,C.deriv,1,[3,5])});
+    const Yf=y=>fTop+(YV[1]-y)/(YV[1]-YV[0])*(fBot-fTop);
+    drawF(X,Yf,x0,x1,fTop,fBot,PL,PR,false);
+    map={X,Y:Yf,inv:py=>YV[1]-(py-fTop)/(fBot-fTop)*(YV[1]-YV[0])};
+  } else {
+    const Yf=y=>fTop+(YV[1]-y)/(YV[1]-YV[0])*(fBot-fTop);
+    drawF(X,Yf,x0,x1,fTop,fBot,PL,PR,true);
+    map={X,Y:Yf,inv:py=>YV[1]-(py-fTop)/(fBot-fTop)*(YV[1]-YV[0])};
+  }
+  hint(showDeriv);
+}
+function drawF(X,Y,x0,x1,top,bot,PL,PR,lad){
+  for(let y=Math.ceil(YV[0]);y<=YV[1];y++) line(PL,Y(y),W-PR,Y(y),C.grid,1);
+  line(PL,Y(0),W-PR,Y(0),C.axis,2.6); text('x축',W-PR-6,Y(0)-11,C.axis,12,'right');
+  if(S.abs){plot(M.f,X,Y,x0,x1,top,bot,C.muted,1.4,[4,6]);plot(x=>Math.abs(M.f(x)),X,Y,x0,x1,top,bot,C.fold,3.4)}
+  else plot(M.f,X,Y,x0,x1,top,bot,C.curve,3.4);
+  M.xs.forEach(x=>{const y=S.abs?Math.abs(M.f(x)):M.f(x);const t=critType(x);dot(X(x),Y(y),t==='flat'?C.deriv:C.ink,5)});
+  const rs=rootsAt(0);
+  rs.forEach(r=>{ if(S.abs&&r.m===1) ringDot(X(r.x),Y(0),C.bad,7); else dot(X(r.x),Y(0),C.axis,6);
+    if(r.m>1) text(multName(r.m),X(r.x),Y(0)+18,C.muted,12); });
+  if(!lad) return;
+  // 사다리
+  const L=ladder(), cur=currentRow(L), lx=W-PR+46;
+  line(lx,top+4,lx,bot-4,C.line,3);
+  L.lv.forEach(l=>{ M.xs.filter(x=>Math.abs(M.f(x)-l.y)<1e-9).forEach(x=>line(X(x),Y(l.y),lx,Y(l.y),C.lad,1.1,[2,5])); });
+  L.rows.forEach((r,i)=>{
+    const on=i===cur;
+    if(r.kind==='lv'){ const yy=Y(r.y); ctx.beginPath();ctx.arc(lx,yy,on?8:6,0,7);ctx.fillStyle=on?C.axis:C.lad;ctx.fill();
+      text(r.n+'개',lx+12,yy,on?C.axis:C.lad,12.5,'left','ui',true); }
+    else{ const yTop=Y(Math.min(r.hi,YV[1]+50)), yBot=Y(Math.max(r.lo,YV[0]-50)); const a=Math.max(top+4,Math.min(yTop,yBot)), b=Math.min(bot-4,Math.max(yTop,yBot));
+      if(b-a>4){ if(on){ctx.save();ctx.strokeStyle=C.axis;ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(lx,a+6);ctx.lineTo(lx,b-6);ctx.stroke();ctx.restore()}
+        const ym=(a+b)/2; if(b-a>22) text(r.n+'개',lx-10,ym,on?C.axis:C.muted,12.5,'right','ui',on); } }
+  });
+  text('교점',lx,top+2,C.muted,11);
+  // 손잡이
+  const hy=Y(S.c); ctx.save();ctx.fillStyle=C.sunk;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(PL+4,hy-15,22,30,7);ctx.fill();ctx.stroke();ctx.restore(); text('↕',PL+15,hy,C.ink,14);
+}
+function hint(der){
+  $('hint').innerHTML = (der&&!S.abs)
+    ? '<b>위</b>: 도함수 f′의 그래프와 부호, <b>아래</b>: f. f′의 부호가 바뀌는 곳만 극값. 부호가 그대로인 근(중근)은 평평한 점.'
+    : (S.abs ? '<b>|f|</b>: 빨간 고리 = 미분가능하지 않은 점(단근). 중근·사중근에서는 매끄럽고, 삼중근도 기울기 0이라 매끄럽다.'
+             : '그래프를 <b>위아래로 끌어</b> x축의 높이를 바꾸세요. 오른쪽 사다리의 숫자 = 그 높이에서 x축과 만나는 점의 개수.');
+}
+
+/* 개형 카드의 작은 그림 */
+function thumb(cvs,sh){
+  const r=cvs.getBoundingClientRect(),w=r.width,h=r.height;if(!w)return;cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
+  const c=cvs.getContext('2d');c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,w,h);
+  const m=model(sh,sh==='W'?(S.step===1||S.step===2?S.r:1.5):1.5,S.a,0), [x0,x1]=m.view;
+  let lo=Infinity,hi=-Infinity;for(let i=0;i<=120;i++){const v=m.f(x0+(x1-x0)*i/120);lo=Math.min(lo,v);hi=Math.max(hi,v)}
+  const cr=m.xs.map(m.f); const ymin=Math.min(...cr)-0.8, ymax=Math.max(...cr)+(S.a>0?4:0.8), y0=S.a>0?ymin:Math.min(...cr)-4, y1=S.a>0?ymax:Math.max(...cr)+0.8;
+  const X=x=>4+(x-x0)/(x1-x0)*(w-8), Y=y=>4+(y1-y)/(y1-y0)*(h-8);
+  c.strokeStyle=C.curve;c.lineWidth=2.2;c.beginPath();for(let i=0;i<=120;i++){const x=x0+(x1-x0)*i/120;const yy=Math.max(-999,Math.min(999,Y(m.f(x))));i?c.lineTo(X(x),yy):c.moveTo(X(x),yy)}c.stroke();
+  m.xs.forEach(x=>{c.beginPath();c.arc(X(x),Y(m.f(x)),3,0,7);c.fillStyle=critType(x,m)==='flat'?C.deriv:C.lad;c.fill()});
+}
+function buildShapes(el,onPick,withR){
+  el.innerHTML='';
+  ORDER.forEach(k=>{const b=document.createElement('div');b.className='shape';b.dataset.sh=k;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-pressed','false');
+    b.innerHTML='<canvas></canvas><span class="t">'+SH[k].t+'</span><span class="s">'+SH[k].s+'</span>'
+      +(withR&&k==='W'?'<div class="rrow"><span>두 극솟값 높이</span><input type="range" class="rIn" min="0.5" max="2" step="0.01" value="1.5" aria-label="두 극솟값의 높이 차이 조절"><output class="rOut">1.5</output></div>':'');
+    b.onclick=e=>{ if(e.target.classList.contains('rIn')) return; onPick(k,b); };
+    b.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&!e.target.classList.contains('rIn')){e.preventDefault();onPick(k,b);} };
+    el.appendChild(b)});
+  el.querySelectorAll('.rIn').forEach(inp=>inp.oninput=e=>{let v=+e.target.value;if(Math.abs(v-1)<0.04)v=1;S.r=v;refresh()});
+}
+function syncR(){document.querySelectorAll('.rIn').forEach(i=>i.value=S.r);document.querySelectorAll('.rOut').forEach(o=>o.textContent=S.r===1?'대칭':num(S.r))}
+function drawThumbs(){document.querySelectorAll('.shape canvas').forEach(cv=>thumb(cv,cv.parentElement.dataset.sh))}
+
+/* ---------- 패널 ---------- */
+function p1info(){
+  const d=SH[S.sh]; const exts=M.xs.map(x=>critType(x));
+  const nExt=exts.filter(t=>t!=='flat').length, hasMax=exts.includes('max');
+  $('p1info').innerHTML='<div class="lbl">지금 고른 개형</div><div class="big">'+d.s+'</div>'
+   +'<dl class="kv"><dt>f′의 부호</dt><dd class="signs">'+(S.a>0?d.signs:d.signs.replace(/[+−]/g,s=>s==='+'?'−':'+'))+'</dd>'
+   +'<dt>극값</dt><dd>'+nExt+'개'+(hasMax?' (극댓값 있음)':' (극댓값 없음)')+(exts.includes('flat')?' · 평평한 점은 극값 아님':'')+'</dd>'
+   +'<dt>근거</dt><dd>f′는 삼차함수 → 「삼차함수 개형 지도」의 어느 칸인지가 곧 사차함수의 개형</dd></dl>'
+   +(S.sh==='W'?'<div style="font-size:12.5px;color:var(--muted);margin-top:6px">W형 카드 안의 「두 극솟값 높이」를 ‘대칭’에 두면 두 극솟값이 같아져 <b style="color:var(--ink)">좌우 대칭</b> (학습지5 8번의 x²(x − 1)² 꼴)</div>':'');
+}
+function p2(){
+  const L=ladder(), cur=currentRow(L), ol=$('ladder'); ol.innerHTML='';
+  L.rows.forEach((r,i)=>{const li=document.createElement('li');li.className=(r.kind==='lv'?'lv':'')+(i===cur?' now':'');
+    const mt=r.mult.length?' ('+r.mult.map(multName).join(', ')+')':'';
+    li.innerHTML='<button><span>x축이 '+r.name+'</span><span class="c">'+r.n+'개'+mt+'</span></button>';
+    li.firstChild.onclick=()=>{S.c-= r.y; refresh();}; ol.appendChild(li)});
+  infoBox($('p2info'),L,cur);
+}
+function infoBox(el,L,cur){
+  const rs=rootsAt(0), simple=rs.filter(q=>q.m===1).length;
+  const r=L.rows[cur]||{name:'',n:rs.length};
+  el.innerHTML='<div class="lbl">지금</div><div class="big">실근 '+rs.length+'개</div>'
+   +'<dl class="kv"><dt>x축 위치</dt><dd>'+r.name+'</dd><dt>실근</dt><dd>'+(rs.map(q=>num(q.x)+(q.m>1?'('+multName(q.m)+')':'')).join(', ')||'없음')+'</dd>'
+   +(S.abs?'<dt>|f| 미분불가</dt><dd>'+simple+'점 (단근 수)</dd>':'')+'</dl>';
+}
+
+/* ---------- 3단계 도전 ---------- */
+const PRE='최고차항의 계수가 양수인 사차함수 f에 대하여 ';
+const Q=[
+ {q:'f는 극댓값을 갖고, 방정식 f(x) = 0은 서로 다른 네 실근을 갖는다.',A:['W'],B:st=>st.n===4,
+  wa:'극댓값이 있으려면 f′의 부호가 −, +, −, + 로 세 번 바뀌어야 한다 → f′ = 0이 서로 다른 세 실근.',wb:'네 번 만나려면 x축이 높은 극솟값과 극댓값 사이에 있어야 한다.'},
+ {q:'방정식 f′(x) = 0이 중근을 갖고, 방정식 f(x) = 0은 삼중근을 갖는다.',A:['S'],B:st=>st.mult.includes(3),
+  wa:'f′ = 0이 중근(과 단근)을 갖는 개형은 어깨형. x⁴형은 f′ = 0이 삼중근이라 다른 칸이다.',wb:'삼중근은 평평한 점이 x축 위에 있을 때 생긴다.'},
+ {q:'f는 극값을 하나만 갖고, 방정식 f(x) = 0은 중근 하나만을 실근으로 갖는다.',A:['S','U'],B:st=>st.n===1&&st.mult[0]===2,
+  wa:'극값이 하나인 개형은 어깨형, U형, x⁴형. 그런데 x⁴형의 바닥은 사중근이라 제외.',wb:'극솟값이 0 → x축이 극솟값 높이.'},
+ {q:'방정식 f(x) = 0은 서로 다른 세 실근을 갖는다.',A:['W'],B:st=>st.n===3,
+  wa:'어깨형은 평평한 점에서도 서로 다른 근이 2개(삼중근 + 단근)뿐. 세 개가 되려면 W형.',wb:'x축이 높은 극솟값 높이이거나 극댓값 높이일 때 (중근 1 + 단근 2).'},
+ {q:'f는 극댓값을 갖고, |f(x)|가 미분가능하지 않은 점이 정확히 2개이다.',A:['W'],B:st=>st.simple===2,
+  wa:'극댓값이 있으면 W형.',wb:'|f|는 단근에서만 꺾인다. 단근이 정확히 2개인 높이는 여러 곳: 두 극솟값 사이, 높은 극솟값 높이, 극댓값 높이, 극댓값보다 위.'},
+ {q:'두 극솟값이 같고, 방정식 f(x) = 0은 서로 다른 두 실근을 가지며 두 근이 모두 중근이다.',src:'학습지5 8번: f(x) − (2x + 1) = x²(x − 1)²',A:['W'],B:st=>st.n===2&&st.mult.length===2&&st.mult.every(k=>k===2),
+  wa:'극솟값이 두 개 → W형.',wb:'W형 카드의 「두 극솟값 높이」를 \'대칭\'으로 맞춘 뒤, x축을 두 극솟값 높이에 두면 중근 두 개.'},
+ {q:'|f(x)|가 실수 전체에서 미분가능하고, 방정식 f(x) = 0은 실근을 갖는다.',A:['W','S','U','Q'],B:st=>st.n>0&&st.simple===0,
+  wa:'네 개형 모두 가능하다. 단근 없이 실근만 있으면 되기 때문.',wb:'x축이 (가장 낮은) 극솟값 높이: 실근이 모두 중근(또는 사중근)이면 |f|는 꺾이지 않는다.'},
+ {q:'방정식 f(x) = 0의 실근이 없다.',A:['W','S','U','Q'],B:st=>st.n===0,
+  wa:'최고차항의 계수가 양수인 사차함수는 모두 가장 낮은 극솟값이 있다 → 네 개형 모두 가능.',wb:'x축이 가장 낮은 극솟값보다 아래.'},
+];
+function stateNow(){const rs=rootsAt(0);return {n:rs.length,mult:rs.filter(q=>q.m>1).map(q=>q.m),simple:rs.filter(q=>q.m===1).length}}
+function showQ(){
+  const q=Q[S.qi]; S.qStage='A'; S.pickA.clear(); setA(1,true);
+  $('qNo').textContent='· '+(S.qi+1)+' / '+Q.length; $('qText').innerHTML=PRE+q.q+(q.src?'<span class="src">'+q.src+'</span>':'');
+  $('fb').textContent='';$('fb').className='fb'; $('qA').hidden=false; $('qB').hidden=true; $('checkA').disabled=false;
+  $('sbA').className='on'; $('sbB').className='';
+  document.querySelectorAll('#shapes3 .shape').forEach(b=>{b.className='shape';b.setAttribute('aria-pressed','false')});
+  $('score').textContent=S.tried?'통과 '+S.solved+' / '+S.tried:'';
+  refresh();
+}
+function pickA(k,b){ if(S.qStage!=='A'||$('checkA').disabled) return; S.pickA.has(k)?S.pickA.delete(k):S.pickA.add(k); b.setAttribute('aria-pressed',S.pickA.has(k)); }
+$('checkA').onclick=()=>{
+  const q=Q[S.qi], ok=q.A.length===S.pickA.size&&q.A.every(k=>S.pickA.has(k));
+  document.querySelectorAll('#shapes3 .shape').forEach(b=>{const k=b.dataset.sh,p=S.pickA.has(k),a=q.A.includes(k);b.classList.remove('right','wrong','miss');
+    if(p&&a)b.classList.add('right');else if(p&&!a)b.classList.add('wrong');else if(!p&&a)b.classList.add('miss')});
+  $('checkA').disabled=true;
+  if(ok){ $('fb').className='fb ok'; $('fb').innerHTML='<b>A 통과!</b> '+q.wa+'<br>이제 B: 그래프를 위아래로 끌어 x축 높이를 맞추세요.'; $('sbA').className='ok';
+    setTimeout(()=>{ S.qStage='B'; $('sbB').className='on'; $('qA').hidden=true; $('qB').hidden=false;
+      S.sh=q.A[0]; S.r=1.5; S.c=S.sh==='W'?-1:-2; syncShapesB(); refresh(); },700);
+  } else { S.tried++; $('fb').className='fb no'; $('fb').innerHTML='<b>A 다시 보기</b> · 초록 점선 칸이 빠졌거나 빨간 칸이 틀렸어요. '+q.wa; $('score').textContent='통과 '+S.solved+' / '+S.tried; }
+};
+function syncShapesB(){const q=Q[S.qi];document.querySelectorAll('#shapes3b .shape').forEach(b=>{const k=b.dataset.sh;b.hidden=!q.A.includes(k);b.setAttribute('aria-pressed',k===S.sh)});
+  syncR();}
+$('checkB').onclick=()=>{ const q=Q[S.qi], ok=q.B(stateNow()); S.tried++;
+  if(ok){S.solved++; $('fb').className='fb ok'; $('fb').innerHTML='<b>B 통과! 이 문제 완료</b> · '+q.wb; $('sbB').className='ok';}
+  else{ $('fb').className='fb no'; $('fb').innerHTML='<b>아직이에요</b> · 지금 실근 '+stateNow().n+'개. 사다리의 숫자를 보며 다시 맞춰 보세요.'; }
+  $('score').textContent='통과 '+S.solved+' / '+S.tried; };
+$('nextQ').onclick=()=>{S.qi=(S.qi+1)%Q.length;showQ()};
+
+/* ---------- 단계 전환 ---------- */
+function setStep(n){
+  S.step=n; ['p1','p2','p3'].forEach((id,i)=>$(id).hidden=(i+1)!==n);
+  [1,2,3].forEach(i=>{const b=$('st'+i);b.setAttribute('aria-current',i===n?'step':'false');b.classList.toggle('done',!!S.done[i]&&i!==n)});
+  $('aSeg').style.visibility=n===3?'hidden':'visible';
+  if(n===3) showQ(); else refresh();
+}
+$('st1').onclick=()=>setStep(1); $('st2').onclick=()=>{S.done[1]=true;setStep(2)}; $('st3').onclick=()=>{S.done[1]=S.done[2]=true;setStep(3)};
+$('to2').onclick=()=>{S.done[1]=true;setStep(2)}; $('to3').onclick=()=>{S.done[2]=true;setStep(3)}; $('back1').onclick=()=>setStep(1);
+
+buildShapes($('shapes1'),k=>{S.sh=k;S.c=0;refresh()},true);
+buildShapes($('shapes3'),pickA);
+buildShapes($('shapes3b'),k=>{if(S.qStage!=='B')return;S.sh=k;S.c=-1;syncShapesB();refresh()},true);
+function setA(v,silent){S.a=v;$('aPos').setAttribute('aria-pressed',v>0);$('aNeg').setAttribute('aria-pressed',v<0);if(!silent)refresh()}
+$('aPos').onclick=()=>setA(1); $('aNeg').onclick=()=>setA(-1);
+function setAbs(v){S.abs=v;$('vF').setAttribute('aria-pressed',!v);$('vAbs').setAttribute('aria-pressed',v);refresh()}
+$('vF').onclick=()=>setAbs(false); $('vAbs').onclick=()=>setAbs(true);
+$('bTheme').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';refresh()};
+
+/* 끌기: 그래프 위아래 (사다리 단계) */
+let drag=null;
+cv.addEventListener('pointerdown',e=>{ const ladStep=(S.step===2)||(S.step===3&&S.qStage==='B'); if(!ladStep||!map)return;
+  const r=cv.getBoundingClientRect(); drag={y0:map.inv(e.clientY-r.top),c0:S.c}; cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{ if(!drag)return; const r=cv.getBoundingClientRect(); let c=drag.c0+(map.inv(e.clientY-r.top)-drag.y0);
+  c=Math.max(-8,Math.min(8,c)); S.c=c; M=model();
+  // 임계값 높이에 가까우면 딱 맞춤
+  for(const x of M.xs){const v=M.f(x); if(Math.abs(v)<0.14){S.c-=v;break}}
+  refresh(false)});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{drag=null;refresh()}));
+
+function refresh(full=true){
+  M=model();
+  syncR();
+  document.querySelectorAll('#shapes1 .shape').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sh===S.sh));
+  drawMain();
+  if(S.step===1) p1info(); else if(S.step===2) p2(); else infoBox($('p3info'),ladder(),currentRow(ladder()));
+  if(full) drawThumbs();
+}
+function resize(){const r=cv.getBoundingClientRect();DPR=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);refresh()}
+new ResizeObserver(resize).observe(cv);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>refresh());
+document.fonts&&document.fonts.ready.then(()=>refresh());
+setStep(1);
+})();
+</script>
