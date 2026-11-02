@@ -1,0 +1,368 @@
+<title>삼차함수 개형 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: 왼쪽은 큰 그래프(고정된 x축 위에서 그래프를 위아래로 움직임), 오른쪽은 '개형 × x축 위치' 지도와 설명.
+   기존 탐구실(회청·IBM Plex)·눈금자(초록 칠판·고운체)와 구분되도록 청사진 계열: 남색 선, x축은 주황 '수면선'. */
+:root{
+  --bg:#eaf0f7; --surface:#fbfdff; --sunk:#dfe8f2; --ink:#13294b; --muted:#5b6d88; --line:#c9d6e5; --grid:#dce6f1;
+  --axis:#d4621a; --curve:#13294b; --fold:#2c78cc; --ok:#1c7a4a; --bad:#c23a3a; --pick:#7b4bc4;
+  --font-ui:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-math:"STIX Two Text","Times New Roman","Batang",serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1a2e; --surface:#13243d; --sunk:#0f1e34; --ink:#e4edfa; --muted:#93a7c4; --line:#27405f; --grid:#1b3150;
+  --axis:#ff9a55; --curve:#e4edfa; --fold:#6fb0ff; --ok:#5fd19a; --bad:#ff7d7d; --pick:#c3a0ff; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0d1a2e; --surface:#13243d; --sunk:#0f1e34; --ink:#e4edfa; --muted:#93a7c4; --line:#27405f; --grid:#1b3150;
+  --axis:#ff9a55; --curve:#e4edfa; --fold:#6fb0ff; --ok:#5fd19a; --bad:#ff7d7d; --pick:#c3a0ff; color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14.5px;box-sizing:border-box;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+*,*::before,*::after{box-sizing:inherit}
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-block:10px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+header h1{font-size:20px;font-weight:800;margin:0 auto 0 0;letter-spacing:-.02em}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.seg button{font-family:var(--font-ui);border:0;background:transparent;color:var(--muted);padding:7px 13px;font-size:13.5px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:600}
+.seg .m{font-family:var(--font-math);font-size:15px}
+.btn{font-family:var(--font-ui);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;font-size:13.5px;cursor:pointer}
+.btn.primary{background:var(--axis);border-color:var(--axis);color:#fff;font-weight:600}
+button:focus-visible{outline:2px solid var(--axis);outline-offset:2px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 560px;gap:12px;min-height:0}
+.stage{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:0}
+canvas#cv{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;left:8px;top:8px;right:8px;font-size:13px;color:var(--muted);pointer-events:none;line-height:1.45;background:color-mix(in srgb,var(--surface) 88%,transparent);border-radius:8px;padding:4px 6px}
+.hint b{color:var(--ink)}
+.side{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+.side>*{flex-shrink:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.lbl{font-size:11.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.map{display:grid;grid-template-columns:62px repeat(5,minmax(0,1fr));gap:6px;align-items:stretch}
+.colh{font-size:11.5px;color:var(--muted);text-align:center;line-height:1.3;align-self:end}
+.rowh{font-size:12px;color:var(--muted);display:flex;align-items:center;line-height:1.3}
+.cell{border:1.5px solid var(--line);border-radius:10px;background:var(--surface);padding:4px 4px 5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--font-ui);color:var(--ink)}
+.cell canvas{width:100%;aspect-ratio:1/0.82;display:block}
+.cell .t{font-size:12px;font-weight:600;text-align:center;line-height:1.25}
+.cell .s{font-size:11px;color:var(--muted);text-align:center;line-height:1.25}
+.cell.now{border-color:var(--axis);box-shadow:0 0 0 2px color-mix(in srgb,var(--axis) 35%,transparent)}
+.cell.sel{border-color:var(--pick);box-shadow:0 0 0 2px color-mix(in srgb,var(--pick) 40%,transparent)}
+.cell.right{border-color:var(--ok);box-shadow:0 0 0 2px color-mix(in srgb,var(--ok) 40%,transparent)}
+.cell.wrong{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 40%,transparent)}
+.cell.miss{border-style:dashed;border-color:var(--ok)}
+.flow{grid-column:2 / -1;display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:0 4px}
+.nonote{grid-column:5 / -1;font-size:11.5px;color:var(--muted);align-self:center;line-height:1.45}
+.info h3{margin:0 0 4px;font-size:16px}
+.info .math{font-family:var(--font-math);font-size:17px}
+.info dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:6px 0 0;font-size:13.5px}
+.info dt{color:var(--muted)}
+.info dd{margin:0}
+.math i{font-style:italic}
+.ctrl{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ctrl label{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.ctrl input{flex:1;accent-color:var(--axis)}
+.ctrl output{font-family:var(--font-math);min-width:44px;text-align:right}
+.quiz .q{font-size:16px;font-weight:600;line-height:1.45}
+.quiz .q .src{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.quiz .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+.quiz .fb{margin-top:8px;font-size:13.5px;line-height:1.5}
+.quiz .fb.ok{color:var(--ok)} .quiz .fb.no{color:var(--bad)}
+.count{font-size:12px;color:var(--muted)}
+@media (max-width:1100px){ .main{grid-template-columns:minmax(0,1fr) 480px} }
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{height:auto}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .stage{height:56vh;min-height:320px}
+  .side{overflow:visible}
+  .map{grid-template-columns:44px repeat(5,minmax(0,1fr));gap:4px}
+  .cell .s{display:none}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>삼차함수 개형 지도</h1>
+    <div class="seg" role="group" aria-label="최고차항의 부호">
+      <button id="aPos" aria-pressed="true"><span class="m"><i>a</i> &gt; 0</span></button>
+      <button id="aNeg" aria-pressed="false"><span class="m"><i>a</i> &lt; 0</span></button>
+    </div>
+    <div class="seg" role="group" aria-label="보기">
+      <button id="vF" aria-pressed="true"><span class="m"><i>y</i> = <i>f</i>(<i>x</i>)</span></button>
+      <button id="vAbs" aria-pressed="false"><span class="m"><i>y</i> = |<i>f</i>(<i>x</i>)|</span></button>
+    </div>
+    <div class="seg" role="group" aria-label="모드">
+      <button id="mExplore" aria-pressed="true">살펴보기</button>
+      <button id="mQuiz" aria-pressed="false">골라내기 연습</button>
+    </div>
+    <button class="btn" id="bTheme">밝기</button>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <canvas id="cv" aria-label="삼차함수 그래프. 위아래로 끌어 x축과의 위치를 바꿉니다"></canvas>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <aside class="side">
+      <div class="card quiz" id="quiz" hidden>
+        <div class="lbl">골라내기 연습 · <span id="qNo"></span></div>
+        <div class="q" id="qText"></div>
+        <div class="row">
+          <span class="count">조건에 맞는 칸을 모두 고르세요</span>
+          <button class="btn primary" id="qCheck">확인</button>
+          <button class="btn" id="qNext">다음 조건</button>
+        </div>
+        <div class="fb" id="qFb"></div>
+      </div>
+
+      <div class="card">
+        <div class="lbl">개형 × x축의 위치 · 칸을 누르면 그 경우로 바뀝니다</div>
+        <div class="map" id="map">
+          <div></div>
+          <div class="colh">극솟값 &gt; 0</div>
+          <div class="colh">극솟값 = 0</div>
+          <div class="colh">극솟값 &lt; 0 &lt; 극댓값</div>
+          <div class="colh">극댓값 = 0</div>
+          <div class="colh">극댓값 &lt; 0</div>
+          <div class="rowh">극값<br>있음</div>
+          <button class="cell" id="c-E1" data-id="E1"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-E2" data-id="E2"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-E3" data-id="E3"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-E4" data-id="E4"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-E5" data-id="E5"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <div></div>
+          <div class="flow"><span>← 그래프가 위로</span><span>그래프가 아래로 →</span></div>
+          <div class="rowh">극값<br>없음</div>
+          <button class="cell" id="c-N1" data-id="N1"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-N2" data-id="N2"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <button class="cell" id="c-N3" data-id="N3"><canvas></canvas><span class="t"></span><span class="s"></span></button>
+          <div class="nonote"><b>f′ = 0인 점 하나</b>(왼쪽 두 칸): x³처럼 잠깐 평평했다가 다시 증가. <b>f′ ≠ 0</b>(셋째 칸): 한 번도 평평해지지 않고 계속 증가.</div>
+          <div></div>
+          <div class="flow" style="justify-content:flex-start">극값이 없으면 x축을 어디에 두어도 실근은 1개 — 삼중근은 평평한 점이 x축 위에 있을 때만</div>
+        </div>
+      </div>
+
+      <div class="card info" id="info"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d');
+const S={a:1, sh:'ext', c:0.7, abs:false, t:1.5, mode:'explore', qi:0, picked:new Set(), checked:false};
+
+/* 모델: 극값 있음 f = a(x³ − 3x) + c, 극값 없음 f = a·x³ + c */
+const B={ext:x=>x*x*x-3*x, flat:x=>x*x*x, inc:x=>x*x*x+3*x};
+const base=x=>B[S.sh](x);
+const f=x=>S.a*base(x)+S.c;
+const fOf=(a,sh,c)=>x=>a*B[sh](x)+c;
+const EPS=1e-9;
+
+function classify(a=S.a,sh=S.sh,c=S.c){
+  if(sh==='inc') return 'N3';
+  if(sh==='flat') return Math.abs(c)<EPS?'N2':'N1';
+  const g=fOf(a,sh,c), v1=g(-1), v2=g(1), M=Math.max(v1,v2), m=Math.min(v1,v2);
+  if(m>EPS) return 'E1'; if(Math.abs(m)<EPS) return 'E2';
+  if(M>EPS) return 'E3'; if(Math.abs(M)<EPS) return 'E4'; return 'E5';
+}
+const REP={E1:{sh:'ext',c:3},E2:{sh:'ext',c:2},E3:{sh:'ext',c:0.7},E4:{sh:'ext',c:-2},E5:{sh:'ext',c:-3},N1:{sh:'flat',c:1.4},N2:{sh:'flat',c:0},N3:{sh:'inc',c:1}};
+
+const INFO={
+  E1:{t:'실근 1개',s:'극값의 곱 > 0',form:'단근 1개',cond:'f(극대) > 0, f(극소) > 0',abs:'미분불가 1점 · 극대 1개'},
+  E2:{t:'실근 2개',s:'중근 + 단근',form:'<i>a</i>(<i>x</i> − α)²(<i>x</i> − β)',cond:'극솟값 = 0 (x축에 접함)',abs:'미분불가 1점 · 극대 1개'},
+  E3:{t:'실근 3개',s:'극값의 곱 < 0',form:'<i>a</i>(<i>x</i> − α)(<i>x</i> − β)(<i>x</i> − γ)',cond:'f(극대) > 0 > f(극소)',abs:'미분불가 3점 · 극대 2개'},
+  E4:{t:'실근 2개',s:'중근 + 단근',form:'<i>a</i>(<i>x</i> − α)²(<i>x</i> − β)',cond:'극댓값 = 0 (x축에 접함)',abs:'미분불가 1점 · 극대 1개'},
+  E5:{t:'실근 1개',s:'극값의 곱 > 0',form:'단근 1개',cond:'f(극대) < 0, f(극소) < 0',abs:'미분불가 1점 · 극대 1개'},
+  N1:{t:'실근 1개',s:'f′ = 0인 점 1개',form:'단근 1개',cond:'극값 없음, 기울기 0인 점이 하나',abs:'미분불가 1점 · 극값: 극소 1개'},
+  N2:{t:'삼중근',s:'<i>a</i>(<i>x</i> − α)³',form:'<i>a</i>(<i>x</i> − α)³',cond:'대칭의 중심이 x축 위, 그곳 기울기 0',abs:'모든 점에서 미분가능'},
+  N3:{t:'실근 1개',s:'f′ ≠ 0 (항상 증가)',form:'단근 1개',cond:'극값도, 기울기 0인 점도 없음',abs:'미분불가 1점 · 극값: 극소 1개'},
+};
+
+/* 근 구하기 (중근은 정확히 판정) */
+function roots(g=f,sh=S.sh){
+  const out=[];
+  if(sh==='ext'){ [-1,1].forEach(x=>{ if(Math.abs(g(x))<1e-9) out.push({x,m:2}); }); }
+  else if(sh==='flat'&&Math.abs(g(0))<1e-9){ return [{x:0,m:3}]; }
+  const N=2400,L=-8,R=8; let px=L,pv=g(L);
+  for(let i=1;i<=N;i++){const x=L+(R-L)*i/N, v=g(x);
+    if(pv===0||v===0||pv*v<0){ if(Math.abs(v)<1e-12&&pv*v>=0){px=x;pv=v;continue}
+      let lo=px,hi=x; for(let k=0;k<60;k++){const mid=(lo+hi)/2; if(g(lo)*g(mid)<=0)hi=mid; else lo=mid}
+      const r=(lo+hi)/2; if(!out.some(o=>Math.abs(o.x-r)<1e-3)) out.push({x:r,m:1}); }
+    px=x;pv=v; }
+  return out.sort((p,q)=>p.x-q.x);
+}
+const num=v=>{const a=Math.abs(v);const s=v<-5e-3?'−':'';if(Math.abs(a-Math.round(a))<5e-3)return s+Math.round(a);return s+(+a.toFixed(2))};
+
+/* ---------- 큰 그래프 ---------- */
+let W=0,H=0,DPR=1,C={};
+const V={x0:-3.2,x1:3.2,y0:-6.5,y1:6.5};
+const PL=10,PR=10,PT=40,PB=12;
+const sx=x=>PL+(x-V.x0)/(V.x1-V.x0)*(W-PL-PR);
+const sy=y=>PT+(V.y1-y)/(V.y1-V.y0)*(H-PT-PB);
+const wy=py=>V.y1-(py-PT)/(H-PT-PB)*(V.y1-V.y0);
+function colors(){const cs=getComputedStyle(document.documentElement);['surface','ink','muted','line','grid','axis','curve','fold','sunk','pick','ok','bad'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim())}
+function line(c,x1,y1,x2,y2,col,w,dash){c.save();c.strokeStyle=col;c.lineWidth=w;c.setLineDash(dash||[]);c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.restore()}
+function plot(c,g,mx,my,x0,x1,col,w,dash){c.save();c.strokeStyle=col;c.lineWidth=w;c.lineJoin='round';c.setLineDash(dash||[]);c.beginPath();
+  const n=300;for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;const Y=Math.max(-4000,Math.min(4000,my(g(x))));i?c.lineTo(mx(x),Y):c.moveTo(mx(x),Y)}c.stroke();c.restore()}
+function text(c,s,x,y,col,size=13,align='center',font='ui'){c.save();c.font=size+'px '+(font==='math'?'"STIX Two Text",serif':'"Gothic A1","Malgun Gothic",sans-serif');c.fillStyle=col;c.textAlign=align;c.textBaseline='middle';c.fillText(s,x,y);c.restore()}
+function dot(c,x,y,col,r=5){c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=col;c.fill();c.lineWidth=2;c.strokeStyle=C.surface;c.stroke()}
+function ring(c,x,y,col,r=6){c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=C.surface;c.fill();c.lineWidth=2.5;c.strokeStyle=col;c.stroke()}
+
+function draw(){
+  colors(); ctx.setTransform(DPR,0,0,DPR,0,0); ctx.fillStyle=C.surface; ctx.fillRect(0,0,W,H);
+  for(let x=Math.ceil(V.x0);x<=V.x1;x++) line(ctx,sx(x),PT,sx(x),H-PB,C.grid,1);
+  for(let y=Math.ceil(V.y0);y<=V.y1;y++) line(ctx,PL,sy(y),W-PR,sy(y),C.grid,1);
+  line(ctx,sx(0),PT,sx(0),H-PB,C.muted,1);
+  // x축 = 수면선
+  line(ctx,PL,sy(0),W-PR,sy(0),C.axis,2.6);
+  text(ctx,'x축',W-PR-6,sy(0)-12,C.axis,13,'right');
+  const g=f, ab=x=>Math.abs(g(x));
+  if(S.abs){ plot(ctx,g,sx,sy,V.x0,V.x1,C.muted,1.6,[4,6]); plot(ctx,ab,sx,sy,V.x0,V.x1,C.fold,3.4); }
+  else plot(ctx,g,sx,sy,V.x0,V.x1,C.curve,3.4);
+  // 극점
+  if(S.sh==='ext'){[-1,1].forEach(x=>{const y=S.abs?Math.abs(g(x)):g(x);dot(ctx,sx(x),sy(y),C.ink,4.5)})}
+  // 근 표시
+  const rs=roots();
+  rs.forEach(r=>{ if(S.abs){ if(r.m===1){ring(ctx,sx(r.x),sy(0),C.bad,7);} else dot(ctx,sx(r.x),sy(0),C.fold,5.5);} else dot(ctx,sx(r.x),sy(0),C.axis,6);
+    if(r.m>1) text(ctx,r.m===2?'중근':'삼중근',sx(r.x),sy(0)+18,C.muted,12); });
+  // |f| = t 직선
+  if(S.abs){ line(ctx,PL,sy(S.t),W-PR,sy(S.t),C.pick,1.8,[8,6]); text(ctx,'y = '+num(S.t),PL+8,sy(S.t)-11,C.pick,13,'left','math');
+    const n=countT(S.t); text(ctx,'교점 '+n+'개'+(n%2?' (홀수)':''),PL+70,sy(S.t)-11,C.pick,13,'left'); }
+  // 손잡이(그래프 위아래 이동)
+  const hx=sx(V.x1)-28, hy=sy(S.c); ctx.save();ctx.fillStyle=C.sunk;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(hx-12,hy-16,24,32,7);ctx.fill();ctx.stroke();ctx.restore();
+  text(ctx,'↕',hx,hy,C.ink,15);
+  $('hint').innerHTML=S.abs
+    ? '<b>|f|</b>: x축 아래를 접어 올린 그래프. <b style="color:var(--bad)">빨간 고리</b>는 미분가능하지 않은 점(단근). 보라 점선 y = t를 끌어 교점 개수를 세어 보세요.'
+    : '그래프를 <b>위아래로 끌면</b>(오른쪽 ↕ 손잡이 또는 그래프 아무 곳) x축과의 위치가 바뀌고, 오른쪽 지도에서 해당 칸에 불이 들어옵니다.';
+}
+function signRoots(g){const out=[];const N=2400,L=-8,R=8;let px=L,pv=g(L);
+  for(let i=1;i<=N;i++){const x=L+(R-L)*i/N,v=g(x);
+    if(pv*v<0||v===0){let lo=px,hi=x;for(let k=0;k<60;k++){const mid=(lo+hi)/2;if(g(lo)*g(mid)<=0)hi=mid;else lo=mid}
+      const r=(lo+hi)/2;if(!out.some(o=>Math.abs(o-r)<1e-3))out.push(r)}
+    px=x;pv=v}
+  return out}
+function countT(t){const g=f; if(t<0) return 0; if(Math.abs(t)<1e-9) return roots().length;
+  const pts=[...signRoots(x=>g(x)-t),...signRoots(x=>g(x)+t)];
+  if(S.sh==='ext'){[-1,1].forEach(x=>{ if(Math.abs(Math.abs(g(x))-t)<1e-6 && !pts.some(p=>Math.abs(p-x)<1e-3)) pts.push(x); })}
+  return pts.length;
+}
+
+/* ---------- 지도 칸 ---------- */
+function thumb(id){
+  const el=$('c-'+id), cvs=el.querySelector('canvas'), r=cvs.getBoundingClientRect();
+  const w=r.width,h=r.height; if(!w)return; cvs.width=Math.round(w*DPR); cvs.height=Math.round(h*DPR);
+  const c=cvs.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,w,h);
+  const rep=REP[id], cc=rep.c;
+  const g=fOf(S.a,rep.sh,cc), ab=x=>Math.abs(g(x));
+  const X0=-2.6,X1=2.6,Y0=-6,Y1=6;
+  const mx=x=>4+(x-X0)/(X1-X0)*(w-8), my=y=>4+(Y1-y)/(Y1-Y0)*(h-8);
+  line(c,4,my(0),w-4,my(0),C.axis,1.8);
+  if(S.abs){plot(c,g,mx,my,X0,X1,C.muted,1,[3,4]);plot(c,ab,mx,my,X0,X1,C.fold,2.2)} else plot(c,g,mx,my,X0,X1,C.curve,2.2);
+  const rs=roots(g,rep.sh); rs.forEach(q=>{c.beginPath();c.arc(mx(q.x),my(0),q.m>1?3.6:2.8,0,7);c.fillStyle=(S.abs&&q.m===1)?C.bad:C.axis;c.fill()});
+  const inf=INFO[id]; el.querySelector('.t').innerHTML=inf.t; el.querySelector('.s').innerHTML=S.abs?inf.abs:(id==='N3'?(S.a>0?'f′ > 0 (항상 증가)':'f′ < 0 (항상 감소)'):inf.s);
+}
+function thumbs(){Object.keys(REP).forEach(thumb)}
+
+/* ---------- 설명 ---------- */
+function info(){
+  const id=classify(), inf=INFO[id], rs=roots(), g=f;
+  const coef=S.a>0?'':'−';
+  const tail=(Math.abs(S.c)<EPS?'':(S.c>0?' + ':' − ')+num(Math.abs(S.c)));
+  const fx=coef+({ext:'(<i>x</i>³ − 3<i>x</i>)',flat:'<i>x</i>³',inc:'(<i>x</i>³ + 3<i>x</i>)'}[S.sh])+tail;
+  let ext='';
+  if(S.sh==='ext'){const xs=S.a>0?[-1,1]:[1,-1]; ext='극댓값 '+num(g(xs[0]))+' (x = '+xs[0]+'), 극솟값 '+num(g(xs[1]))+' (x = '+xs[1]+')';}
+  else if(S.sh==='flat') ext='극값 없음 · <i>f</i>′(0) = 0이지만 부호가 바뀌지 않음';
+  else ext='극값 없음 · <i>f</i>′(<i>x</i>) = '+(S.a>0?'':'−')+'3(<i>x</i>² + 1) '+(S.a>0?'&gt; 0 → 항상 증가':'&lt; 0 → 항상 감소');
+  const rtxt=rs.map(r=>num(r.x)+(r.m===2?'(중근)':r.m===3?'(삼중근)':'')).join(', ');
+  const simple=rs.filter(r=>r.m===1).length;
+  let absPart='';
+  if(S.abs){
+    const nd=rs.filter(r=>r.m===1).map(r=>num(r.x)).join(', ')||'없음';
+    absPart='<dt>미분불가</dt><dd>'+(simple?simple+'점 (x = '+nd+') — 부호가 바뀌고 기울기가 0이 아닌 근':'없음 — 삼중근은 부호가 바뀌어도 기울기가 0이라 꺾이지 않음')+'</dd>'
+      +'<dt>중근에서는</dt><dd>그래프가 x축에 닿았다 돌아가므로 |f|도 매끄럽다 (|f|의 극소)</dd>'
+      +'<dt>|f|의 극대</dt><dd>'+inf.abs.split('·')[1].trim()+' — x축 위의 극대는 그대로, 아래의 극소는 뒤집혀 극대</dd>';
+  }
+  $('info').innerHTML='<div class="lbl">지금 그래프</div><h3>'+inf.t+' <span style="font-weight:400;color:var(--muted);font-size:14px">· '+inf.cond+'</span></h3>'
+    +'<div class="math"><i>f</i>(<i>x</i>) = '+fx+'</div>'
+    +'<dl><dt>극값</dt><dd>'+ext+'</dd><dt>실근</dt><dd>'+(rtxt||'—')+'</dd><dt>인수분해 꼴</dt><dd class="math" style="font-size:15px">'+inf.form+'</dd>'+absPart+'</dl>'
+    +'<div class="ctrl"><label for="sC">그래프 위아래 (상수항)</label><input type="range" id="sC" min="-5" max="5" step="0.01" value="'+S.c+'"><output>'+num(S.c)+'</output></div>'
+    +(S.abs?'<div class="ctrl"><label for="sT">직선 y = t</label><input type="range" id="sT" min="0" max="6" step="0.01" value="'+S.t+'"><output>'+num(S.t)+'</output></div>':'');
+  $('sC').oninput=e=>{S.c=snapC(+e.target.value);refresh()};
+  if(S.abs) $('sT').oninput=e=>{S.t=snapT(+e.target.value);refresh(false)};
+}
+function snapC(v){ const tg=S.sh==='ext'?[2,-2,0]:S.sh==='flat'?[0]:[]; for(const t of tg){ if(Math.abs(v-t)<0.1) return t } return v }
+function snapT(v){ if(S.sh!=='ext') return Math.abs(v)<0.06?0:v; const tg=[0,Math.abs(f(-1)),Math.abs(f(1))]; for(const t of tg){ if(Math.abs(v-t)<0.08) return t } return v }
+
+/* ---------- 연습 카드 ---------- */
+const Q=[
+ {q:'방정식 f(x) = 0이 서로 다른 세 실근을 갖는다.',ans:['E3'],why:'극댓값과 극솟값의 부호가 서로 달라야 x축을 세 번 지난다. f(극대)·f(극소) < 0.'},
+ {q:'방정식 f(x) = 0이 서로 다른 두 실근을 갖는다.',ans:['E2','E4'],why:'극값 하나가 정확히 0 → 그 점에서 x축에 접해 중근, 나머지 하나는 단근.'},
+ {q:'방정식 f(x) = 0의 실근이 오직 하나이고, 그 근은 중근이 아니다.',ans:['E1','E5','N1','N3'],why:'극값이 둘 다 같은 부호이거나 극값이 없으면 x축을 한 번만 지난다. 삼중근 칸은 제외.'},
+ {q:'방정식 f(x) = 0이 중근 또는 삼중근을 갖는다.',ans:['E2','E4','N2'],why:'x축에 접하는 칸: 극값이 0이거나, 극값이 없고 대칭의 중심에서 x축에 접할 때(삼중근).'},
+ {q:'방정식 f′(x) = 0이 실근을 갖지 않는다.',ans:['N3'],why:'f′는 이차함수. 판별식 < 0이면 f′가 항상 양수(또는 음수) → 한 번도 평평해지지 않는다. x³형은 f′(0) = 0이라 제외.'},
+ {q:'f가 극값을 갖지 않는다.',ans:['N1','N2','N3'],why:'f′의 부호가 바뀌지 않으면 극값이 없다. f′ = 0인 점이 있어도(x³형) 부호가 그대로면 극값이 아니다.'},
+ {q:'f가 극값을 갖고, (극댓값) × (극솟값) > 0이다.',ans:['E1','E5'],why:'두 극값이 같은 부호 → x축이 두 극값보다 모두 아래이거나 모두 위.'},
+ {q:'함수 |f(x)|가 실수 전체에서 미분가능하다.',ans:['N2'],why:'|f|는 부호가 바뀌면서 기울기가 0이 아닌 근(단근)에서만 꺾인다. 단근이 하나도 없는 건 삼중근뿐.'},
+ {q:'함수 |f(x)|가 미분가능하지 않은 점이 3개이다.',ans:['E3'],why:'미분불가능한 점 = 단근. 단근이 3개인 칸은 세 실근 칸.'},
+ {q:'f가 극값을 갖고, 함수 |f(x)|가 미분가능하지 않은 점이 오직 1개이다.',ans:['E1','E2','E4','E5'],why:'단근이 1개인 칸. 중근 칸(E2, E4)도 단근은 1개다. 중근에서는 |f|가 매끄럽다.'},
+ {q:'f가 극값을 갖고, |f(x)|가 한 점에서만 미분가능하지 않으며, f(x) = 0이 서로 다른 두 실근을 갖는다.',src:'학습지5 5번 구조',ans:['E2','E4'],why:'미분불가 1점(단근 1개)이면서 서로 다른 근이 2개 → 나머지 하나는 중근.'},
+ {q:'함수 |f(x)|의 극대인 점이 2개이다.',ans:['E3'],why:'x축 위의 극대는 그대로, x축 아래의 극소는 뒤집혀 극대. 둘 다 생기려면 극댓값 > 0 > 극솟값.'},
+ {q:'|f(x)|가 x = α에서 극솟값 0을 갖고, x = α에서 미분가능하다.',ans:['E2','E4','N2'],why:'중근에서는 x축에 닿았다 돌아가고, 삼중근에서는 x축을 지나가지만 기울기가 0이라 접어 올려도 꺾이지 않는다. 두 경우 모두 |f|는 극솟값 0을 갖고 미분가능.'},
+];
+
+function showQuiz(){
+  const q=Q[S.qi]; $('qNo').textContent=(S.qi+1)+' / '+Q.length;
+  $('qText').innerHTML=q.q+(q.src?'<span class="src">'+q.src+'</span>':''); $('qFb').textContent=''; $('qFb').className='fb';
+  S.picked.clear(); S.checked=false; marks();
+}
+function marks(){
+  const now=classify();
+  document.querySelectorAll('.cell').forEach(el=>{const id=el.dataset.id; el.classList.remove('now','sel','right','wrong','miss');
+    if(S.mode==='explore'){ if(id===now) el.classList.add('now'); return }
+    const q=Q[S.qi], inAns=q.ans.includes(id), pk=S.picked.has(id);
+    if(!S.checked){ if(pk) el.classList.add('sel'); return }
+    if(pk&&inAns) el.classList.add('right'); else if(pk&&!inAns) el.classList.add('wrong'); else if(!pk&&inAns) el.classList.add('miss');
+  });
+}
+$('qCheck').onclick=()=>{ const q=Q[S.qi]; S.checked=true; const ok=q.ans.length===S.picked.size&&q.ans.every(a=>S.picked.has(a));
+  $('qFb').className='fb '+(ok?'ok':'no'); $('qFb').innerHTML=(ok?'<b>정답!</b> ':'<b>다시 보기</b> · 초록 점선 칸이 빠졌거나 빨간 칸이 틀렸어요. ')+q.why; marks(); };
+$('qNext').onclick=()=>{ S.qi=(S.qi+1)%Q.length; showQuiz(); };
+
+/* ---------- 입력 ---------- */
+document.querySelectorAll('.cell').forEach(el=>el.onclick=()=>{
+  const id=el.dataset.id;
+  if(S.mode==='quiz'){ if(S.checked) return; S.picked.has(id)?S.picked.delete(id):S.picked.add(id); marks(); return }
+  const r=REP[id]; S.sh=r.sh; S.c=r.c; refresh(true);
+});
+function setA(v){S.a=v;$('aPos').setAttribute('aria-pressed',v>0);$('aNeg').setAttribute('aria-pressed',v<0);refresh(true)}
+$('aPos').onclick=()=>setA(1); $('aNeg').onclick=()=>setA(-1);
+function setAbs(v){S.abs=v;$('vF').setAttribute('aria-pressed',!v);$('vAbs').setAttribute('aria-pressed',v);refresh(true)}
+$('vF').onclick=()=>setAbs(false); $('vAbs').onclick=()=>setAbs(true);
+function setMode(m){S.mode=m;$('mExplore').setAttribute('aria-pressed',m==='explore');$('mQuiz').setAttribute('aria-pressed',m==='quiz');$('quiz').hidden=m!=='quiz';if(m==='quiz')showQuiz();marks()}
+$('mExplore').onclick=()=>setMode('explore'); $('mQuiz').onclick=()=>setMode('quiz');
+$('bTheme').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';refresh(true)};
+
+let drag=null;
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const py=e.clientY-r.top;
+  drag=(S.abs&&Math.abs(py-sy(S.t))<14)?{k:'t'}:{k:'c',y0:wy(py),c0:S.c}; cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!drag)return;const r=cv.getBoundingClientRect();const y=wy(e.clientY-r.top);
+  if(drag.k==='t'){S.t=snapT(Math.max(0,Math.min(6,y)));refresh(false)}
+  else{S.c=snapC(Math.max(-5,Math.min(5,drag.c0+(y-drag.y0))));refresh(false)}});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{drag=null;info()}));
+
+function refresh(full=true){ draw(); marks(); if(full){thumbs()} info(); }
+function resize(){const r=cv.getBoundingClientRect();DPR=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);refresh(true)}
+new ResizeObserver(resize).observe(cv);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>refresh(true));
+document.fonts&&document.fonts.ready.then(()=>refresh(true));
+})();
+</script>
