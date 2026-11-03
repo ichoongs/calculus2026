@@ -1,0 +1,660 @@
+<title>삼차함수 눈금자</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Gowun+Dodum&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+/* Layout: 칠판 같은 그래프 화면이 왼쪽을 차지하고, 오른쪽 좁은 패널에 탭·식·비율·예제. 좁은 화면에서는 위아래로 쌓는다.
+   기존 탐구실(회청색·IBM Plex·보라 손잡이)과 구분되도록 초록 칠판 계열 바탕, 고운 글꼴, 분필색 강조를 쓴다. */
+:root{
+  --bg:#e9eee6;        /* 연한 칠판지 */
+  --surface:#f7f9f4;
+  --sunk:#dfe6db;
+  --ink:#16302a;       /* 칠판 초록 먹 */
+  --muted:#5a6f66;
+  --line:#c7d2c4;
+  --grid:#d8e0d4;
+  --axis:#7d8f86;
+  --curve:#16302a;
+  --r4:#c2306a;        /* 1:1:1:1 — 장미색 분필 */
+  --r4b:#e07a9f;
+  --r3:#9a6c00;        /* 1:√3 — 황토 분필 */
+  --tan:#0f6f8c;       /* 접선 1:2 — 하늘 분필 */
+  --ghost:#8a5cc2;
+  --handle:#16302a;
+  --handle-ring:#f7f9f4;
+  --font-display:"Gowun Batang","Noto Serif KR","Batang",serif;
+  --font-ui:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-math:"STIX Two Text","Times New Roman","Batang",serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#17241f; --surface:#1f302a; --sunk:#14201b; --ink:#eef1e8; --muted:#a3b3aa; --line:#33473f; --grid:#253830; --axis:#6f8579;
+  --curve:#f3f5ee; --r4:#ff8fb6; --r4b:#c95f86; --r3:#f2c14e; --tan:#7fd3e8; --ghost:#c9a7ff; --handle:#f3f5ee; --handle-ring:#17241f; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#17241f; --surface:#1f302a; --sunk:#14201b; --ink:#eef1e8; --muted:#a3b3aa; --line:#33473f; --grid:#253830; --axis:#6f8579;
+  --curve:#f3f5ee; --r4:#ff8fb6; --r4b:#c95f86; --r3:#f2c14e; --tan:#7fd3e8; --ghost:#c9a7ff; --handle:#f3f5ee; --handle-ring:#17241f; color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;box-sizing:border-box;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+*,*::before,*::after{box-sizing:inherit}
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;padding-block:12px}
+.stage{position:relative;min-width:0;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:default}
+.note{position:absolute;left:14px;right:14px;top:12px;font-size:14px;color:var(--muted);pointer-events:none;line-height:1.45}
+.note b{color:var(--ink);font-weight:400}
+.side{min-width:0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px}
+.side>*{flex-shrink:0}
+.head{display:flex;align-items:center;gap:8px}
+.head h1{font-family:var(--font-display);font-weight:700;font-size:22px;margin:0;letter-spacing:-.01em;margin-right:auto}
+.iconbtn{font-family:var(--font-ui);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk)}
+.tabs button{font-family:var(--font-math);font-size:16px;border:0;background:transparent;color:var(--muted);padding:9px 2px;cursor:pointer;white-space:nowrap;min-width:0}
+.tabs button + button{border-left:1px solid var(--line)}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:inset 0 -3px 0 var(--accent,var(--ink))}
+.tabs .ko{font-family:var(--font-ui);font-size:13.5px}
+.hl{color:var(--accent);font-weight:600;background:color-mix(in srgb,var(--accent) 15%,transparent);border-radius:5px;padding:0 4px}
+.hl.zero{outline:2px solid var(--accent)}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.foot{font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.terms{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--font-math);font-size:24px;line-height:1.3}
+.terms span{padding:0 8px;border-radius:8px;border:1.5px solid var(--line);transition:opacity .3s,color .3s}
+.terms span.gone{opacity:.45;text-decoration:line-through;text-decoration-thickness:2px;color:var(--accent);border-style:dashed}
+button:focus-visible,input:focus-visible{outline:2px solid var(--tan);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.lbl{font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.math{font-family:var(--font-math);font-size:18px;line-height:1.5;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.math i{font-style:italic}
+.math.sm{font-size:16px;color:var(--muted)}
+#ff{white-space:normal}
+.ratio{font-family:var(--font-math);font-size:30px;letter-spacing:.02em;color:var(--accent,var(--ink));line-height:1.2}
+.meas{font-family:var(--font-math);font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.5}
+.ctrl{display:grid;grid-template-columns:28px minmax(0,1fr) 54px;align-items:center;gap:8px}
+.ctrl label{font-family:var(--font-math);font-style:italic;font-size:17px}
+.ctrl.wide{grid-template-columns:96px minmax(0,1fr) 54px}
+.ctrl label .ko{font-family:var(--font-ui);font-style:normal;font-size:13px;color:var(--muted)}
+.ctrl output{font-family:var(--font-math);font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--font-ui);font-size:13.5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.presets{display:flex;flex-direction:column;gap:6px}
+.preset{display:grid;grid-template-columns:44px minmax(0,1fr);gap:2px 10px;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;font-family:var(--font-ui)}
+.preset:hover{border-color:var(--muted)}
+.preset .no{font-size:12.5px;color:var(--muted);grid-row:span 2;align-self:center}
+.preset .fx{font-family:var(--font-math);font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset .hint{font-size:12.5px;color:var(--muted)}
+.preset[aria-current="true"]{border-color:var(--accent,var(--ink));box-shadow:inset 3px 0 0 var(--accent,var(--ink))}
+@media (max-width:820px){
+  html,body{height:auto}
+  .app{grid-template-columns:minmax(0,1fr);height:auto}
+  .stage{height:62vh;min-height:340px}
+  .side{overflow:visible}
+}
+/* PC 넓은 화면: 패널을 두 줄로 펼침 */
+@media (min-width:1300px){
+  .app{max-width:1760px;margin-inline:auto;width:100%;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+  .side{display:grid;grid-template-columns:1fr 1fr;align-content:start;gap:14px}
+  .side .head,.side .tabs{grid-column:1 / -1}
+  #presetCard{grid-column:2;grid-row:span 3}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <canvas id="cv" aria-label="삼차함수 그래프와 비율 눈금자"></canvas>
+    <div class="note" id="note"></div>
+  </div>
+  <aside class="side">
+    <div class="head">
+      <h1>삼차함수 눈금자</h1>
+      <button class="iconbtn" id="bFit" title="그래프를 화면에 맞추기">맞춤</button>
+      <button class="iconbtn" id="bTheme" title="밝게/어둡게">밝기</button>
+    </div>
+    <div class="tabs" role="group" aria-label="보기">
+      <button id="t-mv" data-mode="mv" aria-pressed="true"><span class="ko">대칭점</span></button>
+      <button id="t-r4" data-mode="r4" aria-pressed="false">1:1:1:1</button>
+      <button id="t-r3" data-mode="r3" aria-pressed="false">1:√3</button>
+      <button id="t-tan" data-mode="tan" aria-pressed="false"><span class="ko">접선</span></button>
+      <button id="t-q4" data-mode="q4" aria-pressed="false"><span class="ko">사차</span></button>
+    </div>
+
+    <div class="card">
+      <span class="lbl" id="ratioLbl">비율</span>
+      <div class="ratio" id="ratio">1 : 1 : 1 : 1</div>
+      <div class="meas" id="meas"></div>
+    </div>
+
+    <div class="card">
+      <span class="lbl">함수</span>
+      <div class="math" id="fx"></div>
+      <div class="math sm" id="fc"></div>
+      <div class="math sm" id="ff"></div>
+    </div>
+
+    <div class="card" id="mvCtl" hidden>
+      <div class="seg2" role="group" aria-label="보는 방법">
+        <button class="chip" id="bSubRot" aria-pressed="true">돌려서 보기</button>
+        <button class="chip" id="bSubMove" aria-pressed="false">옮겨서 식 보기</button>
+      </div>
+      <div id="mvRot" class="stack">
+        <span class="lbl">왼쪽 절반을 회전 중심으로 돌려 보세요 · 중심점을 끌 수 있습니다</span>
+        <div class="ctrl"><label for="sAng" title="회전 각도">θ</label><input type="range" id="sAng" min="0" max="180" step="1" value="0"><output id="oAng">0°</output></div>
+        <div class="row">
+          <button class="chip" id="bSpin">180° 돌리기</button>
+          <button class="chip" id="bRand">다른 삼차함수</button>
+          <button class="chip" id="bCenter">중심을 대칭 중심으로</button>
+        </div>
+      </div>
+      <div id="mvMove" class="stack" hidden>
+        <span class="lbl" id="mvLbl">중점 M을 원점으로 옮기기</span>
+        <div class="row">
+          <button class="chip" id="bStep1">① 좌우로 (M → y축)</button>
+          <button class="chip" id="bStep2">② 위아래로 (M → 원점)</button>
+          <button class="chip" id="bStep0">처음으로</button>
+        </div>
+        <div class="ctrl"><label for="sU" title="이동 정도">t</label><input type="range" id="sU" min="0" max="2" step="0.01" value="0"><output id="oU">처음</output></div>
+        <div class="row">
+          <button class="chip" id="bTgt" aria-pressed="false">극대점을 옮겨 보면?</button>
+        </div>
+      </div>
+  <div class="foot">참고: 미적분2에서는 이 점을 ‘변곡점’이라고 부릅니다.</div>
+    </div>
+
+    <div class="card" id="cubicCtl">
+      <span class="lbl">조절 · 그래프의 점을 끌어도 됩니다</span>
+      <div class="ctrl wide"><label for="sA"><span class="ko">최고차항</span> a</label><input type="range" id="sA" min="-3" max="3" step="0.05" value="1"><output id="oA">1</output></div>
+      <div class="ctrl wide"><label for="sP"><span class="ko">중심 기울기</span> p</label><input type="range" id="sP" min="-12" max="12" step="0.05" value="-3"><output id="oP">−3</output></div>
+      <div class="foot" id="extInfo"></div>
+      <div class="row">
+        <button class="chip" id="bRot" aria-pressed="false">180° 돌려 보기</button>
+        <button class="chip" id="bNoExt" aria-pressed="false" hidden>극값 없는 삼차</button>
+      </div>
+    </div>
+
+    <div class="card" id="q4Ctl" hidden>
+      <span class="lbl">사차함수 · 극점(세 점)과 회전 중심을 끌어 보세요</span>
+      <div class="row">
+        <button class="chip" id="bRot4" aria-pressed="false">180° 돌려 보기</button>
+        <button class="chip" id="bEven">극점 등간격으로</button>
+      </div>
+    </div>
+
+    <div class="card" id="presetCard">
+      <span class="lbl">학습지 문항 · 학습지-번호</span>
+      <div class="presets" id="presets"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+const S={mode:'mv', sub:'rot', ang:0, cx:null, u:0, tgt:'mid', a:1, m:0, q:0, p:-3, tanX:-1, rot:false, theta:0, q4:{r:[-1.6,0.2,1.4], cx:0, cy:0, rot:false}, preset:null};
+let V={x0:-3,x1:3,y0:-3,y1:3};
+let W=0,H=0,DPR=1;
+
+/* ---------- 수식 ---------- */
+const f=x=>{const X=x-S.m;return S.a*X*X*X+S.p*X+S.q};
+const fp=x=>{const X=x-S.m;return 3*S.a*X*X+S.p};
+const hasExt=()=>S.p/S.a<0;
+const kOf=()=>Math.sqrt(Math.abs(S.p/(3*S.a)));
+const q4f=x=>{const [r1,r2,r3]=S.q4.r;const s1=r1+r2+r3,s2=r1*r2+r2*r3+r1*r3,s3=r1*r2*r3;return x**4-(4/3)*s1*x**3+2*s2*x*x-4*s3*x};
+
+function frac(v){
+  if(!isFinite(v))return '?';
+  const s=v<0?'−':''; const a=Math.abs(v);
+  if(Math.abs(a-Math.round(a))<1e-6)return s+Math.round(a);
+  for(const d of [2,3,4,6,8,9,27]){const n=a*d;if(Math.abs(n-Math.round(n))<1e-6)return s+Math.round(n)+'/'+d}
+  return s+(+a.toFixed(2));
+}
+const num=v=>{const a=Math.abs(v);if(Math.abs(a-Math.round(a))<5e-3)return (v<-0.004?'−':'')+Math.round(a);return (v<0?'−':'')+(+a.toFixed(2))};
+function poly(cs,vn='x'){ // cs: [c3,c2,c1,c0]
+  const pw=['³','²','',''];let out='';
+  cs.forEach((c,i)=>{
+    if(Math.abs(c)<1e-9)return;
+    const deg=3-i; const neg=c<0; const a=Math.abs(c);
+    let coef=frac(a); if(deg>0&&coef==='1')coef='';
+    const term=coef+(deg>0?'<i>'+vn+'</i>'+pw[i]:'');
+    out+=out?(neg?' − ':' + ')+term:(neg?'−':'')+term;
+  });
+  return out||'0';
+}
+function fq(v){return v<0?'('+frac(v)+')':frac(v)}
+function shift(h){return Math.abs(h)<1e-9?'<i>x</i>':'(<i>x</i> '+(h>0?'− ':'+ ')+frac(Math.abs(h))+')'}
+
+/* ---------- 화면 맞춤 ---------- */
+function fit(){
+  if(S.mode==='q4'){
+    const r=S.q4.r; const x0=Math.min(...r)-1.2, x1=Math.max(...r)+1.2;
+    const ys=r.map(q4f); const top=Math.max(...ys), bot=Math.min(...ys); const span=Math.max(top-bot,1);
+    V={x0,x1,y0:bot-span*0.35,y1:top+span*1.1}; return;
+  }
+  const k=kOf()||1, K=Math.max(k,0.3);
+  if(S.mode==='mv'&&S.sub==='move'){
+    const T=tgtPt(), hh=2*Math.abs(S.a)*K**3*1.4;
+    const xs=[S.m-2.4*K,S.m+2.4*K,S.m-T.x-2.4*K,S.m-T.x+2.4*K,0], ys=[S.q-hh,S.q+hh,S.q-T.y-hh,S.q-T.y+hh,0];
+    let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+    const px=(x1-x0)*0.06,py=(y1-y0)*0.08; V={x0:x0-px,x1:x1+px,y0:y0-py,y1:y1+py}; return;
+  }
+  let xs=[S.m-2.5*K,S.m+2.5*K], ys=[];
+  if(S.mode==='tan'){const t=S.tanX-S.m; xs.push(S.tanX-0.6*K, S.tanX+0.6*K, S.m-2*t-0.6*K, S.m-2*t+0.6*K); ys.push(f(S.tanX),f(S.m-2*t))}
+  if(S.mode==='r3'){xs=[S.m-2.2*K,S.m+2.2*K]}
+  const x0=Math.min(...xs), x1=Math.max(...xs);
+  const h=2*Math.abs(S.a)*K**3;
+  ys.push(S.q-h,S.q+h,f(S.m-K),f(S.m+K));
+  let y0=Math.min(...ys), y1=Math.max(...ys); let pad=(y1-y0)*0.28||1; y0-=pad; y1+=pad;
+  if(0<y0 && (y1-0)<=3*(y1-y0)) y0=-(y1-y0)*0.06;
+  if(0>y1 && (0-y0)<=3*(y1-y0)) y1=(y1-y0)*0.06;
+  let X0=x0,X1=x1; if(0<X0 && (X1)<=2.2*(X1-X0)) X0=-(X1-X0)*0.06; if(0>X1 && (-X0)<=2.2*(X1-X0)) X1=(X1-X0)*0.06;
+  V={x0:X0,x1:X1,y0,y1};
+}
+
+/* ---------- 좌표 변환 ---------- */
+const BAND=()=> (S.mode==='q4'||S.mode==='mv'?0:78);
+const PL=46,PR=16,PT=54;
+const plotH=()=>H-BAND()-28-PT;
+const sx=x=>PL+(x-V.x0)/(V.x1-V.x0)*(W-PL-PR);
+const sy=y=>PT+(V.y1-y)/(V.y1-V.y0)*plotH();
+const wx=px=>V.x0+(px-PL)/(W-PL-PR)*(V.x1-V.x0);
+const wy=py=>V.y1-(py-PT)/plotH()*(V.y1-V.y0);
+
+function niceStep(r,n){const raw=r/n;const p=10**Math.floor(Math.log10(raw));const m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p}
+
+let C={};
+function readColors(){const cs=getComputedStyle(document.documentElement);['bg','surface','sunk','ink','muted','line','grid','axis','curve','r4','r4b','r3','tan','ghost','handle','handle-ring'].forEach(k=>C[k]=cs.getPropertyValue('--'+k).trim())}
+
+/* ---------- 그리기 도구 ---------- */
+function line(x1,y1,x2,y2,col,w=1.5,dash=null){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;if(dash)ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore()}
+function dot(x,y,col,r=5.5,ring=true){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fillStyle=col;ctx.fill();if(ring){ctx.lineWidth=2;ctx.strokeStyle=C.surface;ctx.stroke()}}
+function text(s,x,y,col,{size=14,align='center',base='middle',font='math',italic=false,bg=false}={}){
+  ctx.save();ctx.font=(italic?'italic ':'')+size+'px '+(font==='math'?'"STIX Two Text","Times New Roman",serif':'"Gowun Dodum","Malgun Gothic",sans-serif');
+  ctx.textAlign=align;ctx.textBaseline=base;
+  if(bg){const w=ctx.measureText(s).width;let lx=align==='center'?x-w/2:align==='right'?x-w:x;ctx.fillStyle=C.surface;ctx.globalAlpha=.85;ctx.fillRect(lx-3,y-size*0.62,w+6,size*1.24);ctx.globalAlpha=1}
+  ctx.fillStyle=col;ctx.fillText(s,x,y);ctx.restore()}
+function handle(x,y){ctx.beginPath();ctx.arc(x,y,9,0,7);ctx.fillStyle=C['handle-ring'];ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=C.handle;ctx.stroke();ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fillStyle=C.handle;ctx.fill()}
+
+function grid(){
+  const sxs=niceStep(V.x1-V.x0,9), sys=niceStep(V.y1-V.y0,7);
+  ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+  for(let x=Math.ceil(V.x0/sxs)*sxs;x<=V.x1;x+=sxs)line(sx(x),PT,sx(x),PT+plotH(),C.grid,1);
+  for(let y=Math.ceil(V.y0/sys)*sys;y<=V.y1;y+=sys)line(PL,sy(y),W-PR,sy(y),C.grid,1);
+  if(V.y0<0&&V.y1>0)line(PL,sy(0),W-PR,sy(0),C.axis,1.3);
+  if(V.x0<0&&V.x1>0)line(sx(0),PT,sx(0),PT+plotH(),C.axis,1.3);
+  ctx.restore();
+  const yb=PT+plotH();
+  for(let x=Math.ceil(V.x0/sxs)*sxs;x<=V.x1+1e-9;x+=sxs){text(num(x),sx(x),yb+13,C.muted,{size:12.5})}
+  for(let y=Math.ceil(V.y0/sys)*sys;y<=V.y1+1e-9;y+=sys){text(num(y),PL-7,sy(y),C.muted,{size:12.5,align:'right'})}
+}
+function curve(fn,col,w=2.6,dash=null){
+  ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+  if(dash)ctx.setLineDash(dash);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineJoin='round';ctx.beginPath();
+  const n=Math.max(200,Math.floor(W));for(let i=0;i<=n;i++){const x=V.x0+(V.x1-V.x0)*i/n;const Y=sy(fn(x));const py=Math.max(-5000,Math.min(5000,Y));i?ctx.lineTo(sx(x),py):ctx.moveTo(sx(x),py)}
+  ctx.stroke();ctx.restore()}
+function ghost(fn,cxp,cyp,th){
+  ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+  ctx.translate(cxp,cyp);ctx.rotate(th);ctx.translate(-cxp,-cyp);
+  ctx.strokeStyle=C.ghost;ctx.globalAlpha=.85;ctx.lineWidth=5;ctx.setLineDash([2,9]);ctx.lineCap='round';ctx.beginPath();
+  const span=V.x1-V.x0, n=400;
+  for(let i=0;i<=n;i++){const x=V.x0-span+3*span*i/n;const py=Math.max(-5000,Math.min(5000,sy(fn(x))));i?ctx.lineTo(sx(x),py):ctx.moveTo(sx(x),py)}
+  ctx.stroke();ctx.restore()}
+function arrow(x1,y1,x2,y2,col){const L=Math.hypot(x2-x1,y2-y1);if(L<14)return;line(x1,y1,x2,y2,col,1.8,[6,5]);
+  const an=Math.atan2(y2-y1,x2-x1);ctx.save();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-12*Math.cos(an-0.4),y2-12*Math.sin(an-0.4));ctx.lineTo(x2-12*Math.cos(an+0.4),y2-12*Math.sin(an+0.4));ctx.fill();ctx.restore()}
+function vdrop(x,y,col){const yb=H-BAND()+8;line(sx(x),sy(y),sx(x),yb,col,1.2,[4,5])}
+/* 눈금자 띠: 구간 [xa,xb] 막대 */
+function bar(xa,xb,row,col,label){
+  const y=H-BAND()+22+row*26; const A=sx(Math.min(xa,xb)), B=sx(Math.max(xa,xb));
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=6;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(A+2,y);ctx.lineTo(B-2,y);ctx.stroke();
+  ctx.lineWidth=2;[A,B].forEach(X=>{ctx.beginPath();ctx.moveTo(X,y-9);ctx.lineTo(X,y+9);ctx.stroke()});ctx.restore();
+  if(label)text(label,(A+B)/2,y+15,col,{size:13.5});
+}
+function band(){ if(!BAND())return; ctx.fillStyle=C.sunk;ctx.fillRect(0,H-BAND()+6,W,BAND()) }
+
+/* ---------- 장면 ---------- */
+function draw(){
+  readColors();
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);ctx.fillStyle=C.surface;ctx.fillRect(0,0,W,H);
+  band(); grid();
+  const note=$('note');
+  if(S.mode==='q4'){drawQ4();return}
+  if(S.mode==='mv'){drawMv();return}
+  const ext=hasExt(), k=kOf(), m=S.m;
+  if((S.mode==='r4'||S.mode==='r3')&&!ext){
+    curve(f,C.curve); dot(sx(m),sy(S.q),C.ink); handle(sx(m),sy(S.q));
+    note.innerHTML='<b>극값이 없는 삼차함수</b>입니다. 이 비율은 생기지 않습니다. p를 a와 반대 부호로 바꾸거나 <b>접선 1:2</b> 탭을 보세요.';
+    if(S.rot)ghost(f,sx(m),sy(S.q),S.theta);
+    return;
+  }
+  if(S.mode==='r4'){
+    const L=m-k,R=m+k, yL=f(L), yR=f(R);
+    const xs=[m-2*k,L,m,R,m+2*k];
+    line(sx(L),sy(yL),sx(m+2*k),sy(yL),C.r4,1.6,[7,5]);
+    line(sx(m-2*k),sy(yR),sx(R),sy(yR),C.r4,1.6,[7,5]);
+    xs.forEach(x=>vdrop(x,f(x),C.r4b));
+    curve(f,C.curve);
+    const lab=S.a>0?['극솟값 높이','극대','대칭 중심','극소','극댓값 높이']:['극댓값 높이','극소','대칭 중심','극대','극솟값 높이'];
+    const yHi=Math.max(yL,yR);
+    xs.forEach((x,i)=>{const y=f(x);dot(sx(x),sy(y),i===2?C.ink:C.r4);
+      const up=i!==2&&Math.abs(y-yHi)<1e-6*(1+Math.abs(yHi));
+      text(lab[i],sx(x)+(i===2?10:0),sy(y)+(i===2?0:up?-19:19),C.muted,{size:12.5,font:'ui',bg:true,align:i===2?'left':'center'})});
+    for(let i=0;i<4;i++)bar(xs[i],xs[i+1],0,i%2?C.r4b:C.r4,null);
+    xs.forEach((x,i)=>text(num(x),sx(x),H-BAND()+44,C.ink,{size:14}));
+    handle(sx(m),sy(S.q)); handle(sx(R),sy(yR));
+    note.innerHTML='극댓값·극솟값과 <b>같은 높이</b>의 수평선이 곡선과 다시 만나는 점까지, 다섯 점이 <b>같은 간격</b>으로 놓입니다.';
+    if(S.rot)ghost(f,sx(m),sy(S.q),S.theta);
+  }
+  if(S.mode==='r3'){
+    const r3=Math.sqrt(3)*k;
+    line(PL,sy(S.q),W-PR,sy(S.q),C.r3,1.6,[7,5]);
+    [m-r3,m-k,m,m+k,m+r3].forEach(x=>vdrop(x,f(x),C.r3));
+    curve(f,C.curve);
+    [m-r3,m+r3].forEach(x=>dot(sx(x),sy(S.q),C.r3));
+    [m-k,m+k].forEach(x=>dot(sx(x),sy(f(x)),C.r3));
+    dot(sx(m),sy(S.q),C.ink);
+    bar(m,m+k,0,C.r3,null); bar(m,m+r3,1,C.r3,null);
+    text('k = '+num(k),(sx(m)+sx(m+k))/2,H-BAND()+11,C.r3,{size:13});
+    text('√3k = '+num(r3),(sx(m)+sx(m+r3))/2,H-BAND()+37,C.r3,{size:13});
+    bar(m-k,m,0,C.r3,null); bar(m-r3,m,1,C.r3,null);
+    handle(sx(m),sy(S.q)); handle(sx(m+k),sy(f(m+k)));
+    note.innerHTML='대칭의 중심 높이의 수평선. 대칭의 중심에서 극점까지 <b>k</b>, 곡선과 만나는 점까지 <b>√3k</b>.';
+    if(S.rot)ghost(f,sx(m),sy(S.q),S.theta);
+  }
+  if(S.mode==='tan'){
+    const t=S.tanX-m, T=S.tanX, s=m-2*t, slope=fp(T), yT=f(T);
+    ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+    line(sx(V.x0),sy(yT+slope*(V.x0-T)),sx(V.x1),sy(yT+slope*(V.x1-T)),C.tan,2,null);ctx.restore();
+    if(Math.abs(t)>0.02){[m,T,s].forEach(x=>vdrop(x,f(x),C.tan))}
+    curve(f,C.curve);
+    dot(sx(m),sy(S.q),C.ink);
+    if(Math.abs(t)>0.02){
+      dot(sx(s),sy(f(s)),C.tan);
+      text('다시 만나는 점',sx(s),sy(f(s))-18,C.muted,{size:12.5,font:'ui',bg:true});
+      bar(m,T,0,C.tan,null); bar(m,s,1,C.tan,null);
+      text('t = '+num(Math.abs(t)),(sx(m)+sx(T))/2,H-BAND()+11,C.tan,{size:13});
+      text('2t = '+num(Math.abs(2*t)),(sx(m)+sx(s))/2,H-BAND()+37,C.tan,{size:13});
+      note.innerHTML='대칭의 중심에서 접점까지 <b>t</b>이면, 접선이 곡선과 다시 만나는 점은 반대쪽으로 <b>2t</b>. 접점 손잡이를 끌어 보세요.';
+    } else note.innerHTML='<b>대칭의 중심에서 그은 접선</b>은 곡선과 다시 만나지 않습니다. 삼중근이기 때문입니다.';
+    text('접점',sx(T),sy(yT)+22,C.muted,{size:12.5,font:'ui',bg:true});
+    handle(sx(m),sy(S.q)); handle(sx(T),sy(yT));
+    if(S.rot)ghost(f,sx(m),sy(S.q),S.theta);
+  }
+}
+function tgtPt(){ if(S.tgt==='max'&&hasExt()){const k=kOf(),x=S.a>0?S.m-k:S.m+k;return {x,y:f(x)}} return {x:S.m,y:S.q} }
+function shiftNow(){const T=tgtPt();return {hx:T.x*Math.min(S.u,1), vy:T.y*Math.max(0,S.u-1)}}
+function curvePart(fn,xa,xb,col,w){
+  ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
+  const n=300;for(let i=0;i<=n;i++){const x=xa+(xb-xa)*i/n;const py=Math.max(-5000,Math.min(5000,sy(fn(x))));i?ctx.lineTo(sx(x),py):ctx.moveTo(sx(x),py)}
+  ctx.stroke();ctx.restore()}
+function drawRot(){
+  if(S.cx===null)S.cx=S.m;
+  const cx=S.cx, cy=f(cx), CX=sx(cx), CY=sy(cy), span=V.x1-V.x0, at=Math.abs(cx-S.m)<1e-9;
+  const L=V.x0-span, Rr=V.x1+span;
+  curvePart(f,L,cx,C.r4,3.4);
+  // 왼쪽 절반의 회전 사본
+  const th=S.ang*Math.PI/180;
+  if(S.ang>0){
+    ctx.save();ctx.beginPath();ctx.rect(PL,PT,W-PL-PR,plotH());ctx.clip();
+    ctx.translate(CX,CY);ctx.rotate(th);ctx.translate(-CX,-CY);
+    ctx.globalAlpha=.55;ctx.strokeStyle=C.r4;ctx.lineWidth=9;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    const n=400;for(let i=0;i<=n;i++){const x=L+(cx-L)*i/n;const py=Math.max(-5000,Math.min(5000,sy(f(x))));i?ctx.lineTo(sx(x),py):ctx.moveTo(sx(x),py)}
+    ctx.stroke();ctx.restore();
+  }
+  curvePart(f,cx,Rr,C.tan,3.4);
+  if(!at){dot(sx(S.m),sy(S.q),C.muted,5);text('대칭 중심',sx(S.m),sy(S.q)+18,C.muted,{size:12.5,font:'ui',bg:true})}
+  if(hasExt()){const k=kOf();[S.m-k,S.m+k].forEach(x=>dot(sx(x),sy(f(x)),C.ink,4.5))}
+  handle(CX,CY);
+  text(at?'대칭 중심':'회전 중심',CX+14,CY-16,C.ink,{size:13,font:'ui',bg:true,align:'left'});
+  let msg;
+  if(S.ang===0) msg='<b>왼쪽 절반</b>(분홍)을 회전 중심으로 돌리면 <b>오른쪽 절반</b>(파랑)에 겹칠까요?';
+  else if(S.ang<180) msg='돌리는 중… '+S.ang+'°';
+  else msg=at?'<b>정확히 겹칩니다.</b> 삼차함수는 대칭의 중심에 대해 점대칭입니다. 「다른 삼차함수」를 눌러도 마찬가지입니다.'
+             :'<b>겹치지 않습니다.</b> 회전 중심을 대칭의 중심으로 옮겨 보세요.';
+  $('note').innerHTML=msg;
+}
+function drawMv(){
+  if(S.sub==='rot'){drawRot();return}
+  const {hx,vy}=shiftNow(), g=X=>f(X+hx)-vy, T=tgtPt(), mid=S.tgt!=='max';
+  const ext=hasExt(), k=kOf(), mx=S.m-k, Mx=S.m+k;
+  curve(f,C.muted,1.8,[3,6]);
+  // 원래 그래프의 극점·중점
+  if(ext){[mx,Mx].forEach(x=>dot(sx(x),sy(f(x)),C.muted,4,false))}
+  dot(sx(T.x),sy(T.y),C.muted,4,false);
+  const now={x:sx(T.x-hx),y:sy(T.y-vy)};
+  arrow(sx(T.x),sy(T.y),now.x,now.y,C.ghost);
+  curve(g,C.curve);
+  if(S.rot)ghost(g,now.x,now.y,S.theta);
+  if(ext){
+    const A={x:sx(mx-hx),y:sy(f(mx)-vy)}, B={x:sx(Mx-hx),y:sy(f(Mx)-vy)};
+    if(mid)line(A.x,A.y,B.x,B.y,C.ghost,1.6,[5,5]);
+    dot(A.x,A.y,C.ink,5); dot(B.x,B.y,C.ink,5);
+    const lo=S.a>0?['극대','극소']:['극소','극대'];
+    if(mid||S.a<0)text(lo[0],A.x,A.y+(S.a>0?-18:18),C.muted,{size:12.5,font:'ui',bg:true});
+    if(mid||S.a>0)text(lo[1],B.x,B.y+(S.a>0?18:-18),C.muted,{size:12.5,font:'ui',bg:true});
+  }
+  dot(now.x,now.y,C.ghost,7);
+  text(mid?'M':'극대점',now.x+12,now.y-14,C.ghost,{size:mid?17:13,italic:mid,font:mid?'math':'ui',bg:true,align:'left'});
+  const u=S.u, done1=u>=1-1e-9, done2=u>=2-1e-9; let msg;
+  if(!mid) msg=done2?'극대점을 원점으로 옮겨도 <b>x²항이 남습니다.</b> 원점 대칭이 아닙니다. 돌려 봐도 겹치지 않습니다.'
+              :done1?'극대점이 y축 위에 왔지만 <b>x²항이 그대로 있습니다.</b>':'이번에는 중점 대신 <b>극대점</b>을 옮겨 봅니다.';
+  else if(u===0) msg=ext?'극대점과 극소점의 <b>중점 M</b>. 그래프가 M을 중심으로 대칭처럼 보이나요? M을 원점으로 옮겨서 식으로 확인해 봅시다.'
+                    :'극값이 없는 삼차함수입니다. M은 <b>f′의 대칭축</b> 위의 점으로 잡습니다.';
+  else if(!done1) msg='좌우로 옮기는 중: <b>x²의 계수</b>가 바뀝니다.';
+  else if(!done2) msg=u===1?'M이 y축 위에 왔습니다. <b>x²항이 사라졌습니다.</b> 다음은 위아래로.':'위아래로 옮기는 중: <b>상수항</b>만 바뀝니다.';
+  else msg='<b>ax³ + px</b>만 남았습니다. g(−x) = −g(x)이므로 원점에 대해 대칭입니다. 「180° 돌려 보기」로 확인해 보세요.';
+  $('note').innerHTML=msg;
+}
+function drawQ4(){
+  const r=S.q4.r;
+  curve(q4f,C.curve);
+  r.forEach(x=>handle(sx(x),sy(q4f(x))));
+  const c=S.q4; dot(sx(c.cx),sy(c.cy),C.ghost,6);
+  text('회전 중심',sx(c.cx),sy(c.cy)-20,C.muted,{size:12.5,font:'ui',bg:true});
+  if(S.q4.rot)ghost(q4f,sx(c.cx),sy(c.cy),S.theta);
+  const d1=r[1]-r[0], d2=r[2]-r[1];
+  $('note').innerHTML=Math.abs(d1-d2)<0.03
+    ?'극점이 등간격이면 <b>좌우 대칭(선대칭)</b>입니다. 그래도 어느 점을 중심으로 돌려도 겹치지 않습니다.'
+    :'삼차함수는 대칭의 중심을 기준으로 180° 돌리면 <b>자기 자신과 겹칩니다</b>. 사차함수는 회전 중심을 어디로 옮겨도 겹치지 않습니다.';
+}
+
+/* ---------- 패널 ---------- */
+function coeffs(){const a=S.a,m=S.m,p=S.p,q=S.q;return [a,-3*a*m,3*a*m*m+p,-a*m**3-p*m+q]}
+function panel(){
+  const acc={mv:'var(--ghost)',r4:'var(--r4)',r3:'var(--r3)',tan:'var(--tan)',q4:'var(--ghost)'}[S.mode];
+  document.documentElement.style.setProperty('--accent',acc);
+  ['mv','r4','r3','tan','q4'].forEach(md=>$('t-'+md).setAttribute('aria-pressed',S.mode===md));
+  $('mvCtl').hidden=S.mode!=='mv';
+  $('cubicCtl').hidden=S.mode==='q4'; $('q4Ctl').hidden=S.mode!=='q4'; $('presetCard').hidden=S.mode==='q4';
+  $('bNoExt').hidden=S.mode!=='tan'; $('bNoExt').setAttribute('aria-pressed',!hasExt());
+  $('bRot').setAttribute('aria-pressed',S.rot); $('bRot4').setAttribute('aria-pressed',S.q4.rot);
+  $('sA').value=S.a; $('oA').textContent=num(S.a); $('sP').value=S.p; $('oP').textContent=num(S.p);
+  { const k=kOf(); $('extInfo').innerHTML = hasExt()
+      ? '<b style="color:var(--ink)">극점 있음</b> · p와 a의 부호가 반대 · 극점 <i>x</i> = '+num(S.m-k)+', '+num(S.m+k)+' (간격 '+num(2*k)+')'
+      : Math.abs(S.p)<1e-9 ? '<b style="color:var(--ink)">극점 없음</b> · p = 0, 대칭의 중심에서 접선이 수평'
+      : '<b style="color:var(--ink)">극점 없음</b> · p와 a의 부호가 같음 → 계속 '+(S.a>0?'증가':'감소'); }
+  document.querySelectorAll('.preset').forEach(b=>b.setAttribute('aria-current',b.dataset.i===String(S.preset)));
+  const k=kOf(), m=S.m;
+  $('ratioLbl').textContent=S.mode==='mv'?'남은 항':'비율';
+  if(S.mode==='mv'){
+    $('mvRot').hidden=S.sub!=='rot'; $('mvMove').hidden=S.sub==='rot';
+    $('bSubRot').setAttribute('aria-pressed',S.sub==='rot'); $('bSubMove').setAttribute('aria-pressed',S.sub!=='rot');
+    $('bRot').hidden=S.sub==='rot';
+  } else $('bRot').hidden=false;
+  if(S.mode==='mv'&&S.sub==='rot'){
+    if(S.cx===null)S.cx=S.m;
+    const at=Math.abs(S.cx-S.m)<1e-9;
+    $('ratioLbl').textContent='회전';
+    $('sAng').value=S.ang; $('oAng').textContent=S.ang+'°';
+    $('ratio').textContent=S.ang<180?S.ang+'°':(at?'겹친다':'안 겹친다');
+    $('meas').innerHTML='회전 중심 <i>x</i> = '+num(S.cx)+'<br>대칭의 중심 <i>x</i> = −<i>b</i>/(3<i>a</i>) = '+frac(S.m)+(hasExt()?' = 두 극점의 중점':'');
+    $('fx').innerHTML='<i>f</i>(<i>x</i>) = '+poly(coeffs());
+    $('fc').innerHTML=''; $('ff').innerHTML='';
+    return;
+  }
+  if(S.mode==='mv'){
+    const [a,b,c,d]=coeffs(), {hx,vy}=shiftNow(), T=tgtPt(), mid=S.tgt!=='max';
+    const z=v=>Math.abs(v)<1e-9;
+    const c2=3*a*hx+b, c1=3*a*hx*hx+2*b*hx+c, c0=f(hx)-vy;
+    $('sU').value=S.u; $('oU').textContent=S.u===0?'처음':S.u<=1?'좌우':'상하';
+    $('bTgt').setAttribute('aria-pressed',!mid); $('bTgt').hidden=!hasExt();
+    $('mvLbl').textContent=(mid?'중점 M':'극대점')+'을 원점으로 옮기기';
+    $('bStep1').textContent='① 좌우로 ('+(mid?'M':'극대점')+' → y축)'; $('bStep2').textContent='② 위아래로 ('+(mid?'M':'극대점')+' → 원점)';
+    $('ratio').innerHTML='<div class="terms"><span>x³</span><span class="'+(z(c2)?'gone':'')+'">x²</span><span class="'+(z(c1)?'gone':'')+'">x</span><span class="'+(z(c0)?'gone':'')+'">상수</span></div>';
+    const par=x=>x<0?'('+frac(x)+')':frac(x);
+    $('meas').innerHTML='<i>x</i>²의 계수 3<i>a</i>·<i>h</i> + <i>b</i> = 3·'+par(a)+'·'+par(+hx.toFixed(3))+' + '+par(b)+' = '+(z(c2)?'0':num(c2))
+      +'<br>상수항 = '+(z(c0)?'0':num(c0))
+      +(mid&&S.u>=1-1e-9?'<br>M의 <i>x</i>좌표 = (두 극점의 합)/2 = −<i>b</i>/(3<i>a</i>) = '+frac(S.m):'');
+    $('fx').innerHTML='<i>f</i>(<i>x</i>) = '+poly(coeffs());
+    const hs=z(hx)?'':(hx>0?' + ':' − ')+frac(Math.abs(+hx.toFixed(3)));
+    const vs=z(vy)?'':(vy>0?' − ':' + ')+frac(Math.abs(+vy.toFixed(3)));
+    const term=(cv,body,show,hlOn)=>{const sg=cv<-1e-9?' − ':' + ';const val=z(cv)?'0':frac(Math.abs(cv));
+      const t=(body&&val==='1')?body:val+body; const inner=hlOn?'<span class="hl'+(z(cv)?' zero':'')+'">'+(z(cv)?'0'+body:t)+'</span>':t;
+      return show?sg+inner:''};
+    let g=(a===1?'':a===-1?'−':frac(a))+'<i>x</i>³';
+    const on1=S.u>0&&S.u<=1+1e-9, on2=S.u>1+1e-9;
+    g+=term(c2,'<i>x</i>²',!z(c2)||on1||S.u>=1,on1||(S.u>=1&&z(c2)&&!on2));
+    g+=term(c1,'<i>x</i>',!z(c1),false);
+    g+=term(c0,'',!z(c0)||on2,on2);
+    $('fc').innerHTML='<span style="color:var(--ink)"><i>f</i>(<i>x</i>'+hs+')'+vs+' = '+g+'</span>';
+    $('ff').innerHTML=S.u<=1?'<i>x</i>²항의 출처: <i>a</i>(<i>x</i>+<i>h</i>)³ → 3<i>ah</i>·<i>x</i>²,  <i>b</i>(<i>x</i>+<i>h</i>)² → <i>b</i>·<i>x</i>²'
+      :'위아래 이동은 상수항만 바꿉니다. <i>x</i>²항, <i>x</i>항은 그대로.';
+    return;
+  }
+  if(S.mode==='q4'){
+    const [r1,r2,r3]=S.q4.r;
+    $('ratio').textContent='겹치지 않음';
+    $('meas').innerHTML='극점 <i>x</i> = '+[r1,r2,r3].map(num).join(', ')+'<br>극점 간격 '+num(r2-r1)+', '+num(r3-r2);
+    $('fx').innerHTML="<i>f</i>′(<i>x</i>) = 4"+[r1,r2,r3].map(v=>shift(v)).join('');
+    $('fc').innerHTML=''; $('ff').innerHTML='';
+    return;
+  }
+  $('fx').innerHTML='<i>f</i>(<i>x</i>) = '+poly(coeffs());
+  $('fc').innerHTML='= '+(S.a===1?'':S.a===-1?'−':frac(S.a))+shift(m)+'³ '+(S.p<0?'− ':'+ ')+(Math.abs(S.p)===1?'':frac(Math.abs(S.p)))+shift(m)+(Math.abs(S.q)<1e-9?'':(S.q<0?' − ':' + ')+frac(Math.abs(S.q)));
+  const ext=hasExt();
+  if(S.mode==='r4'){
+    $('ratio').textContent=ext?'1 : 1 : 1 : 1':'—';
+    if(ext){const xs=[m-2*k,m-k,m,m+k,m+2*k];
+      $('meas').innerHTML='<i>x</i> = '+xs.map(num).join(', ')+'<br>간격 '+num(k)+'씩 = 두 극점 사이 거리의 절반';
+      const ma=S.a>0?m-k:m+k, mi=S.a>0?m+k:m-k;
+      const ac=(S.a===1?'':S.a===-1?'−':frac(S.a));
+      $('ff').innerHTML='<i>f</i>(<i>x</i>) − '+fq(f(ma))+' = '+ac+shift(ma)+'²'+shift(3*m-2*ma)
+        +'<br><i>f</i>(<i>x</i>) − '+fq(f(mi))+' = '+ac+shift(mi)+'²'+shift(3*m-2*mi);
+    } else {$('meas').textContent='극값이 없습니다';$('ff').innerHTML=''}
+  }
+  if(S.mode==='r3'){
+    $('ratio').textContent=ext?'1 : √3':'—';
+    $('meas').innerHTML=ext?'k = '+num(k)+',  √3k = '+num(Math.sqrt(3)*k)+'<br>실제 비 1 : '+(Math.sqrt(3)*k/k).toFixed(3):'극값이 없습니다';
+    $('ff').innerHTML=ext?'<i>f</i>(<i>x</i>) − '+frac(S.q)+' = '+(S.a===1?'':frac(S.a))+shift(m)+'{'+shift(m)+'² − 3·'+frac(k*k)+'}':'';
+  }
+  if(S.mode==='tan'){
+    const t=S.tanX-m;
+    $('ratio').textContent=Math.abs(t)>0.02?'1 : 2':'삼중근';
+    $('meas').innerHTML='접점 <i>x</i> = '+num(S.tanX)+',  다시 만나는 점 <i>x</i> = '+num(m-2*t)+'<br>대칭의 중심 <i>x</i> = '+num(m)+' 에서 '+num(Math.abs(t))+' : '+num(Math.abs(2*t));
+    const sl=fp(S.tanX), b0=f(S.tanX)-sl*S.tanX;
+    $('ff').innerHTML='접선 <i>y</i> = '+poly([0,0,sl,b0]);
+  }
+}
+
+/* ---------- 예제 ---------- */
+const PRE=[
+  {no:'기본',fx:'x³ − 3x',cs:[1,0,-3,0],mode:'r3',hint:'극점 ±1, x축 교점 0, ±√3'},
+  {no:'4-7',fx:'2x³ − 9x² + 12x − 2',cs:[2,-9,12,-2],mode:'r4',hint:'극솟값 2와 같은 높이의 점 x = 1/2'},
+  {no:'4-3',fx:'x³ + 3x²',cs:[1,3,0,0],mode:'r4',hint:'극댓값 4와 같은 높이의 점 x = 1'},
+  {no:'5-4',fx:'x³ − (3/2)x² + 1/2',cs:[1,-1.5,0,0.5],mode:'r4',hint:'극대 0, 극소 1 → 같은 높이 점 −1/2'},
+  {no:'5-6',fx:'(x + 3)²(x − 3)',cs:[1,3,-9,-27],mode:'r4',hint:'중근 −3, 근 3 → 극소 x = 1'},
+  {no:'5-2',fx:'x³ − 3x',cs:[1,0,-3,0],mode:'r4',hint:'f(x) = 2의 근: −1(중근), 2'},
+  {no:'5-1',fx:'x³ + 2x + 7',cs:[1,0,2,7],mode:'tan',tan:-1,hint:'접점 −1 → 다시 만나는 점 2'},
+];
+function setCubic(cs){const [a,b,c,d]=cs;S.a=a;S.m=-b/(3*a);S.p=c-b*b/(3*a);S.q=a*S.m**3+b*S.m**2+c*S.m+d}
+const box=$('presets');
+PRE.forEach((p,i)=>{const b=document.createElement('button');b.className='preset';b.dataset.i=i;b.id='pre'+i;
+  b.innerHTML='<span class="no">'+p.no+'</span><span class="fx">'+p.fx.replace(/x/g,'<i>x</i>')+'</span><span class="hint">'+p.hint+'</span>';
+  b.onclick=()=>{setCubic(p.cs);S.mode=S.mode==='mv'?'mv':p.mode;S.u=0;S.tgt='mid';S.cx=null;S.ang=0;S.preset=i;S.tanX=(p.tan!==undefined)?p.tan:S.m-(kOf()||1);stopRot();fit();update()};box.appendChild(b)});
+
+/* ---------- 회전 애니메이션 ---------- */
+let anim=null;
+function startRot(){const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;cancelAnimationFrame(anim);
+  if(reduce){S.theta=Math.PI;draw();return}
+  const t0=performance.now();const step=now=>{const u=Math.min(1,(now-t0)/1400);S.theta=Math.PI*(1-Math.cos(Math.PI*u))/2;draw();if(u<1)anim=requestAnimationFrame(step)};anim=requestAnimationFrame(step)}
+function stopRot(){S.rot=false;S.q4.rot=false;cancelAnimationFrame(anim);S.theta=0}
+$('bRot').onclick=()=>{S.rot=!S.rot;if(S.rot)startRot();else stopRot();update()};
+$('bRot4').onclick=()=>{S.q4.rot=!S.q4.rot;if(S.q4.rot)startRot();else stopRot();update()};
+$('bEven').onclick=()=>{const r=S.q4.r;const mid=(r[0]+r[2])/2;r[1]=mid;update()};
+$('bNoExt').onclick=()=>{S.p=-S.p;if(S.p===0)S.p=1;S.preset=null;fit();update()};
+
+/* ---------- 입력 ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;stopRot();
+  if(S.mode==='mv'){S.cx=S.m;S.ang=0}
+  if(S.mode==='tan'){S.tanX=S.m-(kOf()||1)}
+  if((S.mode==='r4'||S.mode==='r3')&&!hasExt())S.p=-S.p||-3*S.a;
+  if(S.mode==='q4'){const r=S.q4.r;S.q4.cx=r[1];S.q4.cy=q4f(r[1])}
+  fit();update()});
+$('sA').oninput=e=>{let v=+e.target.value;if(Math.abs(v)<0.05)v=v<0||S.a<0?-0.05:0.05;S.a=v;S.preset=null;update()};
+$('sP').oninput=e=>{S.p=+e.target.value;S.preset=null;update()};
+let uAnim=null;
+function goU(to){cancelAnimationFrame(uAnim);stopRot();const from=S.u;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.u=to;update();return}
+  const t0=performance.now(),dur=1100;const st=now=>{const k=Math.min(1,(now-t0)/dur);const e=(1-Math.cos(Math.PI*k))/2;S.u=k<1?from+(to-from)*e:to;update();if(k<1)uAnim=requestAnimationFrame(st)};uAnim=requestAnimationFrame(st)}
+$('bSubRot').onclick=()=>{S.sub='rot';S.ang=0;stopRot();fit();update()};
+$('bSubMove').onclick=()=>{S.sub='move';S.u=0;stopRot();fit();update()};
+let aAnim=null;
+$('sAng').oninput=e=>{cancelAnimationFrame(aAnim);S.ang=+e.target.value;update()};
+$('bSpin').onclick=()=>{cancelAnimationFrame(aAnim);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){S.ang=180;update();return}
+  const t0=performance.now(),dur=1800;const st=now=>{const k=Math.min(1,(now-t0)/dur);S.ang=Math.round(180*(1-Math.cos(Math.PI*k))/2);update();if(k<1)aAnim=requestAnimationFrame(st)};aAnim=requestAnimationFrame(st)};
+$('bCenter').onclick=()=>{S.cx=S.m;update()};
+$('bRand').onclick=()=>{const pick=a=>a[Math.floor(Math.random()*a.length)];
+  S.a=pick([1,2,-1,0.5,-2,1.5]);S.m=pick([-1.5,-1,-0.5,0,0.5,1,1.5,2]);S.q=pick([-2,-1,0,1,2,3]);
+  const k=pick([0.6,0.8,1,1.2,1.5]);S.p=(Math.random()<0.8?-1:1)*3*S.a*k*k;
+  S.cx=S.m;S.ang=0;S.preset=null;cancelAnimationFrame(aAnim);fit();update()};
+$('bStep1').onclick=()=>goU(1);
+$('bStep2').onclick=()=>{if(S.u<1){S.u=1}goU(2)};
+$('bStep0').onclick=()=>goU(0);
+$('sU').oninput=e=>{let v=+e.target.value;[0,1,2].forEach(t=>{if(Math.abs(v-t)<0.04)v=t});S.u=v;stopRot();update()};
+$('bTgt').onclick=()=>{S.tgt=S.tgt==='max'?'mid':'max';S.u=0;stopRot();fit();update()};
+$('bFit').onclick=()=>{fit();update()};
+$('bTheme').onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';update()};
+
+let drag=null;
+function pick(px,py){
+  const near=(x,y)=>Math.hypot(px-x,py-y)<24;
+  if(S.mode==='q4'){
+    if(near(sx(S.q4.cx),sy(S.q4.cy)))return 'c';
+    for(let i=0;i<3;i++){const x=S.q4.r[i];if(near(sx(x),sy(q4f(x))))return 'r'+i}
+    return null}
+  if(S.mode==='mv'){
+    if(S.sub!=='rot')return null;
+    const cx=S.cx===null?S.m:S.cx;
+    if(near(sx(cx),sy(f(cx))))return 'c3';
+    if(hasExt()){const R=S.m+kOf();if(near(sx(R),sy(f(R))))return 'e'}
+    return null}
+  if(S.mode==='tan'&&near(sx(S.tanX),sy(f(S.tanX))))return 't';
+  if(hasExt()&&S.mode!=='tan'){const R=S.m+kOf();if(near(sx(R),sy(f(R))))return 'e'}
+  if(near(sx(S.m),sy(S.q)))return 'i';
+  return null}
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();drag=pick(e.clientX-r.left,e.clientY-r.top);if(drag){cv.setPointerCapture(e.pointerId);S.preset=null}});
+cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const px=e.clientX-r.left,py=e.clientY-r.top;
+  if(!drag){cv.style.cursor=pick(px,py)?'grab':'default';return}
+  const x=wx(px),y=wy(py);
+  if(drag==='i'){const dx=x-S.m;S.m=x;S.q=y;S.tanX+=dx}
+  if(drag==='e'){const k=Math.max(0.15,x-S.m);let a=(S.q-y)/(2*k**3);if(Math.abs(a)<0.02)a=a<0?-0.02:0.02;S.a=+a.toFixed(3);S.p=-3*S.a*k*k}
+  if(drag==='t'){S.tanX=x}
+  if(drag==='c3'){S.cx=Math.abs(x-S.m)<0.03*(V.x1-V.x0)?S.m:x}
+  if(drag==='c'){S.q4.cx=x;S.q4.cy=y}
+  if(drag&&drag[0]==='r'){const i=+drag[1];const r=S.q4.r;const lo=i?r[i-1]+0.15:-1e9, hi=i<2?r[i+1]-0.15:1e9;r[i]=Math.min(hi,Math.max(lo,x))}
+  update()});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{drag=null}));
+
+function resize(){const r=cv.getBoundingClientRect();DPR=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);draw()}
+new ResizeObserver(resize).observe(cv);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>draw());
+function update(){panel();draw()}
+
+setCubic(PRE[1].cs);S.mode='mv';S.u=0;S.preset=1;fit();panel();resize();
+document.fonts&&document.fonts.ready.then(()=>draw());
+})();
+</script>

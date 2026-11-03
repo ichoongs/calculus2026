@@ -135,6 +135,15 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
   .cell .s,.flow,.flowpad,.nonote{display:none}
   .info dl{display:none}
 }
+/* PC 넓은 화면: 지도 쪽을 넓히고 전체 폭 상한 */
+@media (min-width:1300px){
+  .app{max-width:1760px;margin-inline:auto;width:100%}
+  .main{grid-template-columns:minmax(0,1.1fr) minmax(560px,1fr)}
+  .map{grid-template-columns:70px repeat(5,minmax(0,1fr));gap:8px}
+  .colh{font-size:12.5px}
+  .cell .t{font-size:13.5px} .cell .s{font-size:12px}
+  .info dl{font-size:14px}
+}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
