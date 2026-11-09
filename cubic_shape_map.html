@@ -329,7 +329,7 @@ function thumb(id){
   const mx=x=>4+(x-X0)/(X1-X0)*(w-8), my=y=>4+(Y1-y)/(Y1-Y0)*(h-8);
   line(c,4,my(0),w-4,my(0),C.axis,1.8);
   if(S.abs){plot(c,g,mx,my,X0,X1,C.muted,1,[3,4]);plot(c,ab,mx,my,X0,X1,C.fold,2.2)} else plot(c,g,mx,my,X0,X1,C.curve,2.2);
-  const rs=roots(g,rep.sh); rs.forEach(q=>{c.beginPath();c.arc(mx(q.x),my(0),q.m>1?3.6:2.8,0,7);c.fillStyle=(S.abs&&q.m===1)?C.bad:C.axis;c.fill()});
+  const rs=roots(g,rep.sh); rs.forEach(q=>{c.beginPath();c.arc(mx(q.x),my(0),S.abs?4:(q.m>1?3.6:2.8),0,7);c.fillStyle=S.abs?(q.m===1?C.bad:C.fold):C.axis;c.fill();if(S.abs){c.lineWidth=1.5;c.strokeStyle=C.surface;c.stroke()}});
   const inf=INFO[id]; el.querySelector('.t').innerHTML=inf.t; el.querySelector('.s').innerHTML=S.abs?inf.abs:(id==='N3'?(S.a>0?'f′ > 0 (항상 증가)':'f′ < 0 (항상 감소)'):inf.s);
 }
 function thumbs(){Object.keys(REP).forEach(thumb)}
