@@ -294,7 +294,7 @@ function draw(){
   if(S.sh==='ext'){[-1,1].forEach(x=>{const y=S.abs?Math.abs(g(x)):g(x);dot(ctx,sx(x),sy(y),C.ink,4.5)})}
   // 근 표시
   const rs=roots();
-  rs.forEach(r=>{ if(S.abs){ if(r.m===1){ring(ctx,sx(r.x),sy(0),C.bad,7);} else dot(ctx,sx(r.x),sy(0),C.fold,5.5);} else dot(ctx,sx(r.x),sy(0),C.axis,6);
+  rs.forEach(r=>{ if(S.abs){ if(r.m===1){dot(ctx,sx(r.x),sy(0),C.bad,6.5);text(ctx,'꺾임',sx(r.x),sy(0)+17,C.bad,12);} else dot(ctx,sx(r.x),sy(0),C.fold,5.5);} else dot(ctx,sx(r.x),sy(0),C.axis,6);
     if(r.m>1) text(ctx,r.m===2?'중근':'삼중근',sx(r.x),sy(0)+18,C.muted,12); });
   // |f| = t 직선
   if(S.abs){ line(ctx,PL,sy(S.t),W-PR,sy(S.t),C.pick,1.8,[8,6]); text(ctx,'y = '+num(S.t),PL+8,sy(S.t)-11,C.pick,13,'left','math');
@@ -303,7 +303,7 @@ function draw(){
   const hx=sx(V.x1)-28, hy=sy(S.c); ctx.save();ctx.fillStyle=C.sunk;ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(hx-12,hy-16,24,32,7);ctx.fill();ctx.stroke();ctx.restore();
   text(ctx,'↕',hx,hy,C.ink,15);
   $('hint').innerHTML=S.abs
-    ? '<b>|f|</b>: x축 아래를 접어 올린 그래프. <b style="color:var(--bad)">빨간 고리</b>는 미분가능하지 않은 점(단근). 보라 점선 y = t를 끌어 교점 개수를 세어 보세요.'
+    ? '<b>|f|</b>: x축 아래를 접어 올린 그래프. <b style="color:var(--bad)">빨간 점(꺾임)</b>은 미분가능하지 않은 점(단근). 보라 점선 y = t를 끌어 교점 개수를 세어 보세요.'
     : '그래프를 <b>위아래로 끌면</b>(오른쪽 ↕ 손잡이 또는 그래프 아무 곳) x축과의 위치가 바뀌고, 오른쪽 지도에서 해당 칸에 불이 들어옵니다.';
 }
 function signRoots(g){const out=[];const N=2400,L=-8,R=8;let px=L,pv=g(L);
