@@ -320,7 +320,7 @@ function drawF(X,Y,x0,x1,top,bot,PL,PR,lad){
   else plot(M.f,X,Y,x0,x1,top,bot,C.curve,3.4);
   M.xs.forEach(x=>{const y=S.abs?Math.abs(M.f(x)):M.f(x);const t=critType(x);dot(X(x),Y(y),t==='flat'?C.deriv:C.ink,5)});
   const rs=rootsAt(0);
-  rs.forEach(r=>{ if(S.abs&&r.m===1) ringDot(X(r.x),Y(0),C.bad,7); else dot(X(r.x),Y(0),C.axis,6);
+  rs.forEach(r=>{ if(S.abs&&r.m===1){ dot(X(r.x),Y(0),C.bad,6.5); text('꺾임',X(r.x),Y(0)+17,C.bad,12); } else dot(X(r.x),Y(0),C.axis,6);
     if(r.m>1) text(multName(r.m),X(r.x),Y(0)+18,C.muted,12); });
   if(!lad) return;
   // 사다리
@@ -342,7 +342,7 @@ function drawF(X,Y,x0,x1,top,bot,PL,PR,lad){
 function hint(der){
   $('hint').innerHTML = (der&&!S.abs)
     ? '<b>위</b>: 도함수 f′의 그래프와 부호, <b>아래</b>: f. f′의 부호가 바뀌는 곳만 극값. 부호가 그대로인 근(중근)은 평평한 점.'
-    : (S.abs ? '<b>|f|</b>: 빨간 고리 = 미분가능하지 않은 점(단근). 중근·사중근에서는 매끄럽고, 삼중근도 기울기 0이라 매끄럽다.'
+    : (S.abs ? '<b>|f|</b>: 빨간 점(꺾임) = 미분가능하지 않은 점(단근). 중근·사중근에서는 매끄럽고, 삼중근도 기울기 0이라 매끄럽다.'
              : '그래프를 <b>위아래로 끌어</b> x축의 높이를 바꾸세요. 오른쪽 사다리의 숫자 = 그 높이에서 x축과 만나는 점의 개수.');
 }
 
