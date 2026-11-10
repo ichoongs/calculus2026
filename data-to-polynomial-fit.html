@@ -359,15 +359,6 @@ function eqString(c,xv){
   if(!terms.length) return '0';
   return terms.map((t,i)=> i===0 ? (t.neg?'−':'')+t.body : (t.neg?' − ':' + ')+t.body).join('');
 }
-function eqHwp(c,xv){
-  const terms=[];
-  for(let k=c.length-1;k>=0;k--){
-    const a=c[k]; if(a===0) continue; const abs=Math.abs(a);
-    const body = k===0 ? fmtNum(abs) : ((abs===1?'':fmtNum(abs)) + xv + (k>1?'^'+k:''));
-    terms.push((terms.length? (a<0?' - ':' + ') : (a<0?'-':'')) + body);
-  }
-  return terms.join('') || '0';
-}
 const U = u => u ? ' '+u : '';
 
 // ---------- graph ----------
@@ -535,17 +526,20 @@ function update(){
   if(cur){
     const f=fits[sel], lo=fmtVal(cur.lo), hi=fmtVal(cur.hi);
     lastFit={ plain:`${fn}(${xv}) = ${eqString(f.c,xv)} (${lo} ≤ ${xv} ≤ ${hi})`,
-      hwp:`${fn}(${xv}) = ${eqHwp(f.c,xv)} ~~ (${lo.replace('−','-')} LEQ ${xv} LEQ ${hi.replace('−','-')})` };
+      eq:`${fn}(${xv}) = ${eqString(f.c,xv)}`, range:`${lo} ≤ ${xv} ≤ ${hi}`,
+      pts, f, sel, xv, fn, xn, xu, yn, yu, nUse:inPts.length, nHold:holdPts.length };
     const h=holdPts[0], hv=h?evalP(f.c,h[0]):0;
     rep.innerHTML=`
       <div class="muted">5번 함수식과 범위</div>
       <div class="eq">${fn}(${xv}) = ${eqString(f.c,xv)} &nbsp;(${lo} ≤ ${xv} ≤ ${hi})</div>
       <div>${xn?`${xv}: ${xn}${xu?` (${xu})`:''}`:`<span class="muted">① 칸에 ${xv}의 뜻·단위를 쓰면 여기 함께 나와요.</span>`}${yn?`<br>${fn}(${xv}): ${yn}${yu?` (${yu})`:''}`:''}</div>
       <div class="row-btns">
+        <button data-act="img" class="primary">보고서용 이미지 복사</button>
+        <button data-act="table">자료 표 복사</button>
         <button data-act="copy">식 복사</button>
-        <button data-act="hwp">한글 수식용 복사</button>
-        <button data-act="png" class="primary">그래프 이미지</button>
+        <button data-act="save">이미지 저장</button>
       </div>
+      <p class="hint" style="margin-top:4px">‘보고서용 이미지’에는 자료 표, 함수식, 변수, 그래프가 한 장에 들어가요. 리로스쿨 5번 칸에 붙여 넣으세요.</p>
       <ol>
         <li><b>5번:</b> 왜 ${names[sel]}인지 한두 문장으로 쓰세요. 오차만이 아니라 그래프 모양이 실제 현상과 맞는지도 근거로 쓰세요.</li>
         <li><b>5번:</b> 범위는 함수를 만든 구간(실선)까지만 쓰세요.${holdPts.length?' 확인용 점은 표의 순서 옆에 ☆로 표시하세요.':''}</li>
@@ -578,23 +572,102 @@ function splitMeaning(s){ if(!s) return ['','']; const i=s.lastIndexOf(','); ret
 // ---------- 보고서 버튼 ----------
 $('rep').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]'); if(!b||!lastFit) return;
-  if(b.dataset.act==='copy') copyText(lastFit.plain,b);
-  else if(b.dataset.act==='hwp') copyText(lastFit.hwp,b);
-  else if(b.dataset.act==='png') makeImage();
+  const a=b.dataset.act;
+  if(a==='copy') copyText(lastFit.plain,b);
+  else if(a==='img') copyImage(reportCanvas(),b);
+  else if(a==='table') copyTable(b);
+  else if(a==='save') saveImage(reportCanvas());
 });
-function makeImage(){
-  if(!last||!last.sel) return;
-  const W=1200,H=820, c=document.createElement('canvas'); c.width=W; c.height=H;
-  const xv=state.xv||'x', fn=state.fn||'f', f=last.fits[last.sel];
-  draw(c.getContext('2d'),W,H,Object.assign({},last,{onlySel:true,legend:true,title:`${fn}(${xv}) = ${eqString(f.c,xv)}`}));
-  const url=c.toDataURL('image/png'), name=`함수근사_${last.sel}차.png`;
+const FONT='"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif';
+const roleTxt=r=>r==='hold'?'확인용':r==='out'?'제외':'사용';
+// 보고서용 한 장: 자료 표 + 함수식·변수 + 그래프
+function reportCanvas(){
+  const L=lastFit, n=L.pts.length, rowH=34, tW=380, tH=(n+1)*rowH;
+  const top=44, gY=top+Math.max(tH,250)+24, gH=440, W=900, H=gY+gH+10;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#5f6470'; ctx.font=`13px ${FONT}`; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText('5. 함수로 나타내기  ·  자료로 함수 만들기', 24, 16);
+  // 표
+  const X=24, cols=[0.16,0.30,0.30,0.24].map(r=>r*tW);
+  const head=['순서', L.xu?`${L.xv} (${L.xu})`:L.xv, L.yu?`${L.fn}(${L.xv}) (${L.yu})`:`${L.fn}(${L.xv})`, '역할'];
+  const rows=[head, ...L.pts.map((p,i)=>[(p[2]==='hold'?'☆':'')+(i+1), fmtVal(p[0]), fmtVal(p[1]), roleTxt(p[2])])];
+  rows.forEach((r,ri)=>{
+    const y=top+ri*rowH, role=ri?L.pts[ri-1][2]:'';
+    if(ri===0){ ctx.fillStyle='#dce6f2'; ctx.fillRect(X,y,tW,rowH); }
+    else if(role==='hold'){ ctx.fillStyle='#fdecea'; ctx.fillRect(X,y,tW,rowH); }
+    else if(role==='out'){ ctx.fillStyle='#f1f1ef'; ctx.fillRect(X,y,tW,rowH); }
+    let x=X;
+    r.forEach((t,ci)=>{ ctx.fillStyle= role==='hold'?'#c0392b':role==='out'?'#8a8f99':'#1d1f24';
+      ctx.font=`${ri===0?'bold ':''}15px ${FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(t,x+cols[ci]/2,y+rowH/2); x+=cols[ci]; });
+  });
+  ctx.strokeStyle='#8a8f99'; ctx.lineWidth=1;
+  for(let i=0;i<=rows.length;i++){ ctx.beginPath(); ctx.moveTo(X,top+i*rowH+.5); ctx.lineTo(X+tW,top+i*rowH+.5); ctx.stroke(); }
+  let cx=X; [0,...cols].forEach(w=>{ cx+=w; ctx.beginPath(); ctx.moveTo(Math.round(cx)+.5,top); ctx.lineTo(Math.round(cx)+.5,top+tH); ctx.stroke(); });
+  // 식·변수
+  const EX=436; let y=top+4; const f=L.f;
+  const line=(t,font,color,dy)=>{ ctx.font=font; ctx.fillStyle=color; ctx.textAlign='left'; ctx.textBaseline='top';
+    // 길면 줄바꿈
+    const words=t.split(' '); let cur=''; for(const w of words){ const tryS=cur?cur+' '+w:w; if(ctx.measureText(tryS).width>W-EX-20 && cur){ ctx.fillText(cur,EX,y); y+=dy; cur=w; } else cur=tryS; } ctx.fillText(cur,EX,y); y+=dy; };
+  line('함수식',`bold 15px ${FONT}`,'#1d1f24',24);
+  line(L.eq,`21px "Cambria Math","Times New Roman",serif`,'#1d1f24',30);
+  line(`(${L.range})`,`17px "Cambria Math","Times New Roman",serif`,'#1d1f24',36);
+  line('변수',`bold 15px ${FONT}`,'#1d1f24',24);
+  line(`${L.xv}: ${L.xn||'(뜻을 입력하세요)'}${L.xu?` (${L.xu})`:''}`,`15px ${FONT}`,'#1d1f24',24);
+  line(`${L.fn}(${L.xv}): ${L.yn||'(뜻을 입력하세요)'}${L.yu?` (${L.yu})`:''}`,`15px ${FONT}`,'#1d1f24',34);
+  line('근사',`bold 15px ${FONT}`,'#1d1f24',24);
+  line(`${L.sel}차 다항함수 · 사용한 점 ${L.nUse}개${L.nHold?` · 확인용 점 ${L.nHold}개`:''}`,`15px ${FONT}`,'#444',24);
+  line(`평균 오차 ${fmtVal(f.rmse)}${U(L.yu)}${f.hold!=null?` · 확인용 점 차이 ${fmtVal(f.hold)}${U(L.yu)}`:''}`,`15px ${FONT}`,'#444',24);
+  // 그래프
+  const g=document.createElement('canvas'); g.width=W-32; g.height=gH;
+  draw(g.getContext('2d'),g.width,g.height,Object.assign({},last,{onlySel:true,legend:true}));
+  ctx.drawImage(g,16,gY);
+  return c;
+}
+async function copyImage(c,btn){
+  const done=()=>{ const t=btn.textContent; btn.textContent='복사됨 ✓ 붙여 넣으세요'; setTimeout(()=>btn.textContent=t,1600); };
+  try{
+    if(!navigator.clipboard||!window.ClipboardItem) throw new Error('no-api');
+    await navigator.clipboard.write([new ClipboardItem({'image/png': new Promise(res=>c.toBlob(res,'image/png'))})]);
+    done();
+  }catch(e){ saveImage(c,'<p><b>자동 복사가 안 되는 환경이에요.</b> 아래 그림을 길게 눌러(컴퓨터는 오른쪽 클릭) ‘이미지 복사’를 고른 뒤 붙여 넣으세요.</p>'); }
+}
+function tableHTML(){
+  const L=lastFit, cs='border:1px solid #999;padding:4px 10px;text-align:center;', hs=cs+'background:#dce6f2;font-weight:bold;';
+  return `<table style="border-collapse:collapse;"><tr><th style="${hs}">순서</th><th style="${hs}">${L.xv}${L.xu?` (${L.xu})`:''}</th><th style="${hs}">${L.fn}(${L.xv})${L.yu?` (${L.yu})`:''}</th><th style="${hs}">역할</th></tr>${
+    L.pts.map((p,i)=>`<tr><td style="${cs}">${p[2]==='hold'?'☆':''}${i+1}</td><td style="${cs}">${fmtVal(p[0])}</td><td style="${cs}">${fmtVal(p[1])}</td><td style="${cs}">${roleTxt(p[2])}</td></tr>`).join('')
+  }</table><p>${L.plain}</p>`;
+}
+function tableText(){
+  const L=lastFit;
+  return `${L.xv}: ${L.xn}${L.xu?` (${L.xu})`:''} / ${L.fn}(${L.xv}): ${L.yn}${L.yu?` (${L.yu})`:''}\n`+
+    L.pts.map((p,i)=>`${p[2]==='hold'?'☆':''}${i+1}) ${L.xv} = ${fmtVal(p[0])}${U(L.xu)},  ${L.fn}(${L.xv}) = ${fmtVal(p[1])}${U(L.yu)}${p[2]==='hold'?'  (확인용)':p[2]==='out'?'  (제외)':''}`).join('\n')+
+    `\n함수식: ${L.plain}`;
+}
+async function copyTable(btn){
+  const html=tableHTML(), text=tableText();
+  const done=()=>{ const t=btn.textContent; btn.textContent='복사됨 ✓'; setTimeout(()=>btn.textContent=t,1200); };
+  try{
+    if(!navigator.clipboard||!window.ClipboardItem) throw new Error('no-api');
+    await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]);
+    done();
+  }catch(e){
+    const tmp=document.createElement('div'); tmp.innerHTML=html; tmp.style.cssText='position:fixed;left:-9999px;top:0'; document.body.appendChild(tmp);
+    const r=document.createRange(); r.selectNodeContents(tmp); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} s.removeAllRanges(); tmp.remove();
+    ok?done():copyText(text,btn);
+  }
+}
+function saveImage(c,lead){
+  const url=c.toDataURL('image/png'), name=`함수근사_${lastFit.sel}차.png`;
   const btns=[['내려받기',()=>{ const a=document.createElement('a'); a.download=name; a.href=url; document.body.appendChild(a); a.click(); a.remove(); },true]];
   c.toBlob(blob=>{
     let file=null; try{ file=new File([blob],name,{type:'image/png'}); }catch(e){}
     if(file && navigator.canShare && navigator.canShare({files:[file]}))
       btns.unshift(['공유·사진에 저장',()=>navigator.share({files:[file]}).catch(()=>{}),true]);
-    openModal(`<img src="${url}" alt="근사 함수 그래프">
-      <p><b>휴대폰·태블릿:</b> 그림을 길게 눌러 ‘사진에 저장’ 또는 ‘복사’를 고르세요. 카카오톡 등 앱 안에서 열었다면 ‘다른 브라우저로 열기’ 후 저장하면 잘 돼요.<br><b>컴퓨터:</b> ‘내려받기’를 누르세요.</p>`, btns);
+    openModal((lead||'')+`<img src="${url}" alt="보고서용 이미지">
+      <p><b>휴대폰·태블릿:</b> 그림을 길게 눌러 ‘복사’ 또는 ‘사진에 저장’을 고르세요. 카카오톡 등 앱 안에서 열었다면 ‘다른 브라우저로 열기’ 후 하면 잘 돼요.<br><b>컴퓨터:</b> 오른쪽 클릭 → 이미지 복사, 또는 ‘내려받기’.</p>`, btns);
   },'image/png');
 }
 
