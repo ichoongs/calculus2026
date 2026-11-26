@@ -94,6 +94,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .pill.neu{background:var(--panel2);border-color:var(--line);color:var(--ink)}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.chipsep{flex-basis:100%;font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
 .chip{font-family:var(--font-ui);font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer}
 .chip small{font-weight:500;color:var(--muted);margin-left:3px}
 .chip[aria-pressed="true"]{background:var(--handle);border-color:var(--handle);color:var(--handle-ink)}
@@ -155,7 +156,7 @@ details[open] summary::before{content:"－ "}
 
 <div class="app">
   <header class="top">
-    <div class="ttl"><h1>속도와 가속도 탐구실</h1><span class="sub">교과서 103~106쪽 · 수직선 위를 움직이는 점</span></div>
+    <div class="ttl"><h1>속도와 가속도 탐구실</h1><span class="sub">교과서 103~106쪽 · 142~146쪽 · 수직선 위를 움직이는 점</span></div>
     <div class="hr">
     <div class="icons" id="icons" aria-label="타는 것"></div>
     <input type="file" id="photoIn" accept="image/*" hidden>
@@ -203,6 +204,11 @@ details[open] summary::before{content:"－ "}
         <div class="cell"><span class="k">위치 <i>x</i></span><span class="val" id="rX"></span></div>
         <div class="cell"><span class="k">속도 <i>v</i></span><span class="val" id="rV"></span><span class="spd">속력 |<i>v</i>| = <b id="rS"></b></span></div>
         <div class="cell"><span class="k">가속도 <i>a</i></span><span class="val" id="rA"></span></div>
+      </div>
+      <div class="read" id="ivRead" hidden style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)">
+        <div class="cell"><span class="k">위치 변화량 ∫<i>v</i> <i>dt</i></span><span class="val" id="rDX"></span></div>
+        <div class="cell"><span class="k">움직인 거리 ∫|<i>v</i>| <i>dt</i></span><span class="val" id="rDist"></span></div>
+        <div class="cell" style="grid-column:1/3"><span class="spd" id="rX0"></span></div>
       </div>
       <div class="states">
         <div class="st"><span class="k">운동 방향</span><span class="pill" id="pDir"></span></div>
@@ -275,6 +281,13 @@ const PRESETS=[
   {id:'s3',chip:'스스로 3',title:'쏘아 올린 물체',page:'106쪽',t0:0,t1:8,unit:true,...fromPoly([0,40,-5])},
   {id:'cube',chip:'멈춤 ≠ 전환',title:'멈췄는데 돌아서지 않는 점',page:'반례',t0:0,t1:2,unit:false,...fromPoly([-1,3,-3,1]),xh:'(<i>t</i> '+MINUS+' 1)<sup>3</sup>'},
   {id:'elev',chip:'엘리베이터',title:'올라갔다 내려오는 엘리베이터',page:'도입',t0:0,t1:11,unit:true,icon:'elev',...elevator},
+  /* Ⅳ-06 속도와 거리: 위치 변화량 = ∫v, 움직인 거리 = 넓이 */
+  {id:'i_open',grp:'iv',chip:'생각 열기',title:'직선 철로 위 기차',page:'142쪽',t0:0,t1:5,unit:false,...fromPoly([0,0,3])},
+  {id:'i_ex1',grp:'iv',chip:'예제 1',title:'좌표 1에서 출발한 점 P',page:'144쪽',t0:0,t1:4,unit:false,...fromPoly([1,0,3,-1])},
+  {id:'i_pr1',grp:'iv',chip:'문제 1',title:'좌표 '+MINUS+'1에서 출발한 점 P',page:'144쪽',t0:0,t1:3,unit:false,...fromPoly([-1,-4,1])},
+  {id:'i_ex2',grp:'iv',chip:'예제 2',title:'쏘아 올린 물체',page:'145쪽',t0:0,t1:6,unit:true,...fromPoly([0,30,-5])},
+  {id:'i_pr3',grp:'iv',chip:'문제 3',title:'35 m 옥상에서 쏘아 올린 물체',page:'145쪽',t0:0,t1:8,unit:true,...fromPoly([35,40,-5])},
+  {id:'i_s1',grp:'iv',chip:'스스로 1',title:'원점에서 출발한 점 P',page:'146쪽',t0:0,t1:3,unit:false,...fromPoly([0,0,1,-1/3]),xh:MINUS+'<span class="txt">⅓</span><i>t</i><sup>3</sup> + <i>t</i><sup>2</sup>'},
 ];
 
 /* ---------- 직접 입력 파서 ---------- */
@@ -541,6 +554,12 @@ function updateSide(){
   $('rV').innerHTML=fmt(c.v,2)+(u?'<small>m/s</small>':''); setCls($('rV'),c.v,c.epsV);
   $('rA').innerHTML=fmt(c.a,2)+(u?'<small>m/s²</small>':''); setCls($('rA'),c.a,c.epsA);
   $('rS').textContent=fmt(Math.abs(c.v),2);
+  { const iv=S.mode==='book'&&S.P&&S.P.grp==='iv'; $('ivRead').hidden=!iv;
+    if(iv){ const P=S.P,x0=P.x(P.t0),dx=c.x-x0; let dist=0; const n=600;
+      for(let i=0;i<n;i++){ const ta=P.t0+(c.t-P.t0)*i/n, tb=P.t0+(c.t-P.t0)*(i+1)/n; dist+=Math.abs(P.x(tb)-P.x(ta)); }
+      $('rDX').innerHTML=fmt(dx,2)+(u?'<small>m</small>':''); setCls($('rDX'),dx,1e-9);
+      $('rDist').innerHTML=fmt(dist,2)+(u?'<small>m</small>':'');
+      $('rX0').innerHTML='출발 위치 <i>x</i><sub>0</sub> = <b>'+fmt(x0,2)+'</b> &nbsp;→&nbsp; 지금 위치 = <i>x</i><sub>0</sub> + ∫<i>v</i> <i>dt</i> = <b>'+fmt(c.x,2)+'</b>'; } }
   const pd=$('pDir'); pd.className='pill';
   if(c.v>c.epsV){ pd.textContent='↑ 양의 방향'; pd.classList.add('pos'); }
   else if(c.v<-c.epsV){ pd.textContent='↓ 음의 방향'; pd.classList.add('neg'); }
@@ -639,7 +658,7 @@ renderIcons();
 try{ const saved=localStorage.getItem('motionLabPhoto'); if(saved) addPhoto(saved,false); }catch(_){}
 $('oPrev').onchange=e=>S.preview=e.target.checked; $('oFace').onchange=e=>S.face=e.target.checked; $('oFlame').onchange=e=>S.flame=e.target.checked;
 
-$('chips').innerHTML=PRESETS.map(p=>`<button class="chip" data-id="${p.id}" aria-pressed="false">${p.chip}</button>`).join('');
+$('chips').innerHTML=PRESETS.map((p,i)=>(p.grp==='iv'&&(i===0||PRESETS[i-1].grp!=='iv')?'<span class="chipsep">Ⅳ 적분 · 속도와 거리</span>':(i===0?'<span class="chipsep">Ⅲ 미분의 활용 · 속도와 가속도</span>':''))+`<button class="chip" data-id="${p.id}" aria-pressed="false">${p.chip}</button>`).join('');
 document.querySelectorAll('#chips .chip').forEach(b=>b.onclick=()=>{ const P=PRESETS.find(p=>p.id===b.dataset.id); if(S.icon==='elev'&&!P.icon) setIcon('rocket'); loadPreset(P); });
 $('cGo').onclick=()=>{ const err=$('cErr'); err.textContent='';
   try{ const t0=parseFloat($('c0').value),t1=parseFloat($('c1').value); if(!(t1>t0)) throw Error('t 범위의 끝이 시작보다 커야 해요');
@@ -658,7 +677,7 @@ function frame(now){
 }
 const mq=matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener?.('change',readColors);
 new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-readColors(); resize(); setIcon('rocket'); loadPreset(PRESETS.find(p=>p.id==='ex2'));
+readColors(); resize(); setIcon('rocket'); loadPreset(PRESETS.find(p=>p.id===new URLSearchParams(location.search).get('p'))||PRESETS.find(p=>p.id==='ex2'));
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{});
 requestAnimationFrame(frame);
 })();
